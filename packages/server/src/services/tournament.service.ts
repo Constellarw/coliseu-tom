@@ -240,12 +240,13 @@ export class TournamentService {
       const tourney = this.dbService.db.prepare('SELECT current_round FROM tournaments WHERE id = ?').get(tournamentId) as any;
       targetRound = tourney?.current_round || 1;
     }
+    const finalRound = targetRound || 1;
 
     const rows = this.dbService.db.prepare(`
       SELECT * FROM matches
       WHERE tournament_id = ? AND round_number = ?
       ORDER BY table_number ASC
-    `).all(tournamentId, targetRound) as any[];
+    `).all(tournamentId, finalRound) as any[];
 
     return rows.map(m => {
       const p1 = this.dbService.db.prepare('SELECT * FROM players WHERE tournament_id = ? AND user_id = ?').get(tournamentId, m.player1_id) as any;

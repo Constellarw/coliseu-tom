@@ -1,10 +1,11 @@
 import { createRequire } from 'node:module';
+import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
 
 const require = createRequire(import.meta.url);
 const { DatabaseSync } = require('node:sqlite');
 
 export class DatabaseService {
-  public db: DatabaseSync;
+  public db: DatabaseSyncType;
 
   constructor(filePath: string = ':memory:') {
     this.db = new DatabaseSync(filePath);

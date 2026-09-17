@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tournament type="3" stage="5" version="1.80" gametype="TRADING_CARD_GAME" mode="TCG1DAY">
+	<data>
+		<name>Test tournament</name>
+		<id></id>
+		<city>City</city>
+		<state></state>
+		<country>Country</country>
+		<roundtime>30</roundtime>
+		<finalsroundtime>75</finalsroundtime>
+		<organizer popid="999999" name="Test Organizer"/>
+		<startdate>09/06/2025</startdate>
+		<lessswiss>false</lessswiss>
+		<autotablenumber>true</autotablenumber>
+		<overflowtablestart>17</overflowtablestart>
+	</data>
+	<timeelapsed>152</timeelapsed>
+	<players>
+		<player userid="987654321">
+			<firstname>Ash</firstname>
+			<lastname>Ketchum</lastname>
+			<birthdate>02/27/1999</birthdate>
+			<starter>true</starter>
+			<creationdate>09/06/2025 09:29:45</creationdate>
+			<lastmodifieddate>09/06/2025 09:29:45</lastmodifieddate>
+		</player>
+		<player userid="876543219">
+			<firstname>Gary</firstname>
+			<lastname>Oak</lastname>
+			<birthdate>02/27/1998</birthdate>
+			<starter>true</starter>
+			<creationdate>09/06/2025 09:29:58</creationdate>
+			<lastmodifieddate>09/06/2025 09:29:58</lastmodifieddate>
+		</player>
+		<player userid="123456789">
+			<firstname>Red</firstname>
+			<lastname>Pallet</lastname>
+			<birthdate>02/27/2018</birthdate>
+			<starter>true</starter>
+			<creationdate>09/06/2025 09:26:49</creationdate>
+			<lastmodifieddate>09/06/2025 09:30:46</lastmodifieddate>
+		</player>
+	</players>
+	<pods>
+		<pod category="2" stage="0">
+			<poddata>
+				<startingtable>1</startingtable>
+				<playoff3rd4th>false</playoff3rd4th>
+				<subgroupcount>1</subgroupcount>
+				<additionalrounds>0</additionalrounds>
+			</poddata>
+			<subgroups>
+				<subgroup number="1">
+					<players>
+						<player userid="987654321" />
+						<player userid="876543219" />
+					</players>
+				</subgroup>
+			</subgroups>
+			<rounds>
+				<round number="1" type="3" stage="6">
+					<timeleft>1714</timeleft>
+					<pairtime>09/06/2025 10:03:51</pairtime>
+					<starttime>09/06/2025 10:05:11</starttime>
+					<matches>
+						<match outcome="1">
+							<player1 userid="987654321"/>
+							<player2 userid="876543219"/>
+							<timestamp>09/06/2025 10:05:15</timestamp>
+							<tablenumber>1</tablenumber>
+						</match>
+					</matches>
+				</round>
+			</rounds>
+		</pod>
+	</pods>
+	<standings>
+		<pod category="2" type="finished">
+			<player id="987654321" place="1" />
+			<player id="876543219" place="2" />
+		</pod>
+	</standings>
+</tournament>

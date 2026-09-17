@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tournament type="3" stage="5" version="1.80" gametype="TRADING_CARD_GAME" mode="TCG1DAY">
+	<data>
+		<name>Regional Test</name>
+		<id></id>
+		<city>Sao Paulo</city>
+		<state>SP</state>
+		<country>Brazil</country>
+		<roundtime>30</roundtime>
+		<finalsroundtime>75</finalsroundtime>
+		<organizer popid="123456" name="Head TO"/>
+		<startdate>09/06/2025</startdate>
+		<lessswiss>false</lessswiss>
+		<autotablenumber>true</autotablenumber>
+		<overflowtablestart>17</overflowtablestart>
+	</data>
+	<timeelapsed>152</timeelapsed>
+	<players>
+		<player userid="101">
+			<firstname>Lucas</firstname>
+			<lastname>Silva</lastname>
+			<birthdate>02/27/1999</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="102">
+			<firstname>Marcos</firstname>
+			<lastname>Costa</lastname>
+			<birthdate>02/27/1998</birthdate>
+			<starter>true</starter>
+		</player>
+	</players>
+	<pods>
+		<pod category="2" stage="0">
+			<poddata>
+				<startingtable>1</startingtable>
+			</poddata>
+			<rounds>
+				<round number="1">
+					<matches>
+						<match outcome="3">
+							<player1 userid="101"/>
+							<player2 userid="102"/>
+							<tablenumber>1</tablenumber>
+						</match>
+					</matches>
+				</round>
+			</rounds>
+		</pod>
+	</pods>
+	<standings>
+		<pod category="2" type="finished">
+			<player id="101" place="1" />
+			<player id="102" place="2" />
+		</pod>
+	</standings>
+</tournament>

@@ -1,2 +1,3 @@
-export * from './types';
-export * from './parser';
+export * from './types.js';
+export * from './parser.js';
+export * from './generator.js';

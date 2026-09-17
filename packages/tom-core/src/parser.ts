@@ -10,7 +10,7 @@ import {
   MatchOutcomeCode,
   MatchOutcomeDescriptions,
   AgeCategoryNames
-} from './types';
+} from './types.js';
 
 function ensureArray<T>(item: T | T[] | undefined | null): T[] {
   if (!item) return [];

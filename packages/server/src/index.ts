@@ -1,9 +1,16 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
+import fastifyStatic from '@fastify/static';
+import { existsSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DatabaseService } from './db/database.js';
 import { TournamentService } from './services/tournament.service.js';
 import { MatchReportService } from './services/match-report.service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export function buildServer(dbPath?: string) {
   const fastify = Fastify({ logger: true });
@@ -16,6 +23,15 @@ export function buildServer(dbPath?: string) {
 
   fastify.register(cors, { origin: '*' });
   fastify.register(websocket);
+
+  // Serve static web app if built
+  const webDistPath = resolve(__dirname, '../../web/dist');
+  if (existsSync(webDistPath)) {
+    fastify.register(fastifyStatic, {
+      root: webDistPath,
+      prefix: '/'
+    });
+  }
 
   function broadcast(tournamentId: string, event: string, payload: any) {
     const clients = wsClients.get(tournamentId);

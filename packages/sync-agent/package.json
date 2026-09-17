@@ -1,0 +1,23 @@
+{
+  "name": "@tom/sync-agent",
+  "version": "1.0.0",
+  "description": "Local desktop sync agent for Pokemon Tournament Operations Manager (TOM)",
+  "main": "dist/index.js",
+  "bin": {
+    "tom-sync": "./dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tom/core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

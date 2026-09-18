@@ -10,7 +10,7 @@ export const App: React.FC = () => {
     return localStorage.getItem('poketom_popId') || '';
   });
 
-  const [tournamentName, setTournamentName] = useState<string>('Pokémon TCG Torneio');
+  const [tournamentName, setTournamentName] = useState<string>('Coliseu TCG • Torneio Pokémon');
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [activeMatch, setActiveMatch] = useState<any | null>(null);
   const [pairings, setPairings] = useState<any[]>([]);
@@ -170,7 +170,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#090D16] text-amber-50 flex flex-col">
       <Header
         tournamentName={tournamentName}
         currentRound={currentRound}
@@ -202,8 +202,12 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-4 border-t border-slate-900 text-center text-xs text-slate-500">
-        PokéTOM Companion &bull; Compatível com Pokémon Tournament Operations Manager (TDF)
+      <footer className="py-4 border-t border-amber-900/20 text-center text-xs text-amber-400/60 flex items-center justify-center gap-2">
+        <span className="font-bold text-amber-400">Arena Coliseu TCG</span>
+        <span>&bull;</span>
+        <span>Mogi Guaçu - SP</span>
+        <span>&bull;</span>
+        <span>Compatível com Pokémon Tournament Operations Manager (TOM)</span>
       </footer>
     </div>
   );

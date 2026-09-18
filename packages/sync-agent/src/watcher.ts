@@ -1,4 +1,4 @@
-import { watch, readFileSync, existsSync, FSWatcher } from 'fs';
+import { watch, watchFile, unwatchFile, readFileSync, existsSync, FSWatcher } from 'fs';
 
 export interface WatcherOptions {
   filePath: string;
@@ -33,8 +33,20 @@ export class TomFileWatcher {
       // Ignored initially
     }
 
-    this.watcher = watch(this.options.filePath, (eventType) => {
-      if (eventType === 'change' || eventType === 'rename') {
+    // Native inotify / ReadDirectoryChangesW
+    try {
+      this.watcher = watch(this.options.filePath, (eventType) => {
+        if (eventType === 'change' || eventType === 'rename') {
+          this.scheduleCheck();
+        }
+      });
+    } catch {
+      // Ignored if unsupported
+    }
+
+    // Polling fallback (essential for WSL2 /mnt/c 9P mounts and network drives)
+    watchFile(this.options.filePath, { interval: 100 }, (curr, prev) => {
+      if (curr.mtimeMs !== prev.mtimeMs || curr.size !== prev.size) {
         this.scheduleCheck();
       }
     });
@@ -45,7 +57,7 @@ export class TomFileWatcher {
       clearTimeout(this.timer);
     }
 
-    const debounce = this.options.debounceMs ?? 300;
+    const debounce = this.options.debounceMs ?? 150;
     this.timer = setTimeout(() => {
       this.checkAndNotify();
     }, debounce);
@@ -89,6 +101,11 @@ export class TomFileWatcher {
     if (this.watcher) {
       this.watcher.close();
       this.watcher = null;
+    }
+    try {
+      unwatchFile(this.options.filePath);
+    } catch {
+      // Ignored
     }
   }
 }

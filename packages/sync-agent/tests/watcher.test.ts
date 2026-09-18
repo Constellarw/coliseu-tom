@@ -39,7 +39,7 @@ describe('TOM File Watcher', () => {
     writeFileSync(testFile, updatedXml, 'utf-8');
 
     // Wait for debounce to fire
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 350));
 
     watcher.stop();
 

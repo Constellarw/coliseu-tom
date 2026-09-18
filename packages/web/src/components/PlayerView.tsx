@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Swords, Trophy, Users, CheckCircle2, AlertTriangle, Clock, Search, LogOut } from 'lucide-react';
+import { ColiseuIcon } from './ColiseuIcon';
 
 interface PlayerMatchView {
   matchId: string;
@@ -64,13 +65,15 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
   // If player hasn't entered their POP ID yet
   if (!popId) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl text-center">
-        <div className="w-16 h-16 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
-          <Swords className="w-8 h-8" />
+      <div className="max-w-md mx-auto mt-8 p-6 bg-[#101726] rounded-2xl border border-amber-900/30 shadow-2xl text-center">
+        <div className="flex justify-center mb-4">
+          <ColiseuIcon size={56} />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Identificação do Jogador</h2>
-        <p className="text-sm text-slate-400 mb-6">
-          Digite seu Pokémon Player ID (POP ID) para ver sua mesa, adversário e reportar resultados.
+        <h2 className="text-xl font-black text-white mb-1 tracking-tight">
+          Arena Coliseu TCG
+        </h2>
+        <p className="text-xs text-amber-200/70 mb-6">
+          Informe seu POP ID (Pokémon Player ID) para entrar na arena, acompanhar sua mesa e reportar resultados.
         </p>
 
         <form
@@ -85,32 +88,32 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
             value={inputPopId}
             onChange={(e) => setInputPopId(e.target.value)}
             placeholder="Ex: 987654321"
-            className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg font-mono tracking-wider"
+            className="w-full px-4 py-3 bg-[#090D16] border border-amber-900/40 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 text-center text-lg font-mono tracking-wider"
             autoFocus
           />
           <button
             type="submit"
             disabled={!inputPopId.trim()}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/25"
+            className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-slate-950 font-black rounded-xl transition-all shadow-lg shadow-amber-500/20 active:scale-98"
           >
-            Acompanhar Torneio
+            Entrar na Arena
           </button>
         </form>
 
         {pairings.length > 0 && (
           <div className="mt-8 text-left border-t border-slate-800 pt-4">
-            <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">
-              Ou selecione seu nome na rodada atual:
+            <span className="text-[11px] text-amber-400/80 uppercase font-bold tracking-wider">
+              Ou escolha seu nome na lista da rodada:
             </span>
             <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5 pr-1">
               {pairings.flatMap(p => [p.player1, p.player2]).filter(Boolean).map((p: any) => (
                 <button
                   key={p.userid}
                   onClick={() => setPopId(p.userid)}
-                  className="w-full text-left px-3 py-2 text-xs rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-300 flex justify-between items-center transition-colors"
+                  className="w-full text-left px-3 py-2 text-xs rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 flex justify-between items-center transition-colors border border-slate-800/80"
                 >
-                  <span className="font-medium text-white">{p.fullName}</span>
-                  <span className="font-mono text-slate-400">{p.userid}</span>
+                  <span className="font-semibold text-white">{p.fullName}</span>
+                  <span className="font-mono text-amber-400">{p.userid}</span>
                 </button>
               ))}
             </div>
@@ -144,14 +147,14 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       {/* Player header bar */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl px-4 py-2.5 flex items-center justify-between">
+      <div className="bg-[#101726] border border-amber-900/30 rounded-xl px-4 py-2.5 flex items-center justify-between shadow-md">
         <div className="flex items-center space-x-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-slate-400">Jogador:</span>
-          <span className="text-sm font-semibold text-white">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-xs text-slate-400">Gladiador:</span>
+          <span className="text-sm font-bold text-white">
             {activeMatch?.player.fullName || `ID: ${popId}`}
           </span>
-          <span className="text-xs text-slate-500 font-mono">({popId})</span>
+          <span className="text-xs text-amber-400/90 font-mono">({popId})</span>
         </div>
         <button
           onClick={() => setPopId('')}
@@ -163,12 +166,12 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
       </div>
 
       {/* Tabs navigation */}
-      <div className="grid grid-cols-3 gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+      <div className="grid grid-cols-3 gap-2 bg-[#101726] p-1 rounded-xl border border-slate-800 shadow-sm">
         <button
           onClick={() => setActiveTab('match')}
-          className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'match'
-              ? 'bg-blue-600 text-white shadow-sm'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
               : 'text-slate-400 hover:text-white'
           }`}
         >
@@ -177,9 +180,9 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('pairings')}
-          className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'pairings'
-              ? 'bg-blue-600 text-white shadow-sm'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
               : 'text-slate-400 hover:text-white'
           }`}
         >
@@ -188,14 +191,14 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('standings')}
-          className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'standings'
-              ? 'bg-blue-600 text-white shadow-sm'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
               : 'text-slate-400 hover:text-white'
           }`}
         >
           <Trophy className="w-4 h-4" />
-          <span>Tabela</span>
+          <span>Classificação</span>
         </button>
       </div>
 
@@ -203,14 +206,14 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
       {activeTab === 'match' && (
         <div className="space-y-4">
           {activeMatch ? (
-            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-b from-[#101726] to-[#090D16] border border-amber-900/30 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
               {/* Highlight table header */}
               <div className="flex items-center justify-between mb-6">
-                <span className="bg-yellow-400 text-slate-950 px-4 py-1.5 rounded-full text-base font-black tracking-wide shadow-md">
+                <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 px-5 py-1.5 rounded-full text-lg font-black tracking-wider shadow-lg shadow-amber-500/20">
                   MESA {activeMatch.tableNumber}
                 </span>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-300/80 flex items-center gap-1 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
                   Rodada {activeMatch.roundNumber}
                 </span>
               </div>
@@ -218,19 +221,19 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
               {/* Matchup view */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
                 {/* You */}
-                <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow">
+                <div className="bg-[#141d30] p-4 rounded-xl border border-amber-500/20 flex items-center space-x-3 shadow">
+                  <div className="w-11 h-11 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center shadow-md">
                     VOCÊ
                   </div>
                   <div>
                     <p className="font-bold text-base text-white">{activeMatch.player.fullName}</p>
-                    <p className="text-xs text-slate-400 font-mono">POP ID: {activeMatch.player.userid}</p>
+                    <p className="text-xs text-amber-400 font-mono">POP ID: {activeMatch.player.userid}</p>
                   </div>
                 </div>
 
                 {/* Opponent */}
-                <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-bold text-white shadow">
+                <div className="bg-[#141d30] p-4 rounded-xl border border-red-900/30 flex items-center space-x-3 shadow">
+                  <div className="w-11 h-11 rounded-full bg-red-700 text-white font-black text-xs flex items-center justify-center shadow-md">
                     VS
                   </div>
                   <div>
@@ -247,9 +250,9 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
               {/* Status Alert */}
               <div className="mb-6">
                 {activeMatch.status === 'IN_PROGRESS' && (
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-center">
-                    <p className="text-sm text-blue-400 font-medium">
-                      Partida em andamento. Ao finalizar, reporte o resultado abaixo.
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center">
+                    <p className="text-sm text-amber-300 font-medium">
+                      Duelo na Arena em andamento! Ao finalizar, registre o resultado abaixo.
                     </p>
                   </div>
                 )}
@@ -257,19 +260,19 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
                   <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center flex items-center justify-center gap-2">
                     <Clock className="w-4 h-4 text-yellow-400 animate-spin" />
                     <p className="text-sm text-yellow-300 font-medium">
-                      Resultado reportado. Aguardando a confirmação do seu oponente.
+                      Resultado enviado. Aguardando confirmação do seu oponente.
                     </p>
                   </div>
                 )}
                 {activeMatch.status === 'CONFIRMED' && (
                   <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-center flex items-center justify-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-green-400" />
-                    <p className="text-sm text-green-300 font-semibold">
-                      Resultado confirmado!{' '}
+                    <p className="text-sm text-green-300 font-bold">
+                      Resultado oficial confirmado!{' '}
                       {activeMatch.isTie
                         ? 'Empate'
                         : activeMatch.confirmedWinnerId === activeMatch.player.userid
-                        ? 'Você Venceu!'
+                        ? 'Vitória sua!'
                         : 'Vitória do Oponente'}
                     </p>
                   </div>
@@ -277,8 +280,8 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
                 {activeMatch.status === 'DISPUTED' && (
                   <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center flex items-center justify-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-red-400 animate-bounce" />
-                    <p className="text-sm text-red-300 font-semibold">
-                      Conflito de resultados reportados! Por favor, chame um juiz à mesa {activeMatch.tableNumber}.
+                    <p className="text-sm text-red-300 font-bold">
+                      Divergência nos reports! Por favor, chame o Juiz da Coliseu à mesa {activeMatch.tableNumber}.
                     </p>
                   </div>
                 )}
@@ -288,18 +291,18 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
               {activeMatch.status !== 'CONFIRMED' && (
                 <button
                   onClick={() => setReportModalOpen(true)}
-                  className="w-full py-3.5 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black rounded-xl text-base transition-all shadow-lg shadow-yellow-400/20 active:scale-[0.99]"
+                  className="w-full py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black rounded-xl text-base transition-all shadow-xl shadow-amber-500/25 active:scale-98"
                 >
                   Reportar Vencedor da Partida
                 </button>
               )}
             </div>
           ) : (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center">
-              <Clock className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-white mb-1">Nenhuma mesa ativa no momento</h3>
+            <div className="bg-[#101726] border border-slate-800 rounded-2xl p-8 text-center">
+              <Clock className="w-10 h-10 text-amber-500/50 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-white mb-1">Aguardando Pareamento</h3>
               <p className="text-sm text-slate-400">
-                Aguarde o organizador gerar a próxima rodada no TOM. A tela atualizará automaticamente.
+                Aguarde o organizador da Coliseu TCG gerar a próxima rodada no TOM. A tela atualizará automaticamente.
               </p>
             </div>
           )}
@@ -316,7 +319,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar mesa ou nome do jogador..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-[#101726] border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
@@ -324,10 +327,10 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
             {filteredPairings.map((p) => (
               <div
                 key={p.matchId}
-                className="bg-slate-900/70 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between"
+                className="bg-[#101726] border border-slate-800 rounded-xl p-3.5 flex items-center justify-between hover:border-amber-900/30 transition-colors"
               >
                 <div className="flex items-center space-x-3">
-                  <span className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-yellow-400 text-sm">
+                  <span className="w-10 h-10 rounded-lg bg-slate-900 border border-amber-500/30 flex items-center justify-center font-black text-amber-400 text-sm shadow">
                     {p.tableNumber}
                   </span>
                   <div>
@@ -341,20 +344,20 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
                 </div>
                 <div>
                   {p.status === 'CONFIRMED' ? (
-                    <span className="bg-green-500/20 text-green-400 border border-green-500/30 text-xs px-2.5 py-1 rounded-full font-medium">
+                    <span className="bg-green-500/20 text-green-400 border border-green-500/30 text-xs px-2.5 py-1 rounded-full font-bold">
                       Concluído
                     </span>
                   ) : p.status === 'DISPUTED' ? (
-                    <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-2.5 py-1 rounded-full font-medium">
+                    <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-2.5 py-1 rounded-full font-bold">
                       Disputa
                     </span>
                   ) : p.status === 'PENDING_CONFIRMATION' ? (
-                    <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs px-2.5 py-1 rounded-full font-medium">
+                    <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs px-2.5 py-1 rounded-full font-bold">
                       Pendente
                     </span>
                   ) : (
                     <span className="bg-slate-800 text-slate-400 text-xs px-2.5 py-1 rounded-full font-medium">
-                      Jogando
+                      Em duelo
                     </span>
                   )}
                 </div>
@@ -366,13 +369,13 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
 
       {/* Tab 3: Standings */}
       {activeTab === 'standings' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+        <div className="bg-[#101726] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-yellow-400" />
-              Classificação do Torneio
+              <Trophy className="w-4 h-4 text-amber-400" />
+              Classificação Coliseu TCG
             </h3>
-            <span className="text-xs text-slate-400">{standings.length} Jogadores</span>
+            <span className="text-xs text-amber-400/80 font-mono font-bold">{standings.length} Jogadores</span>
           </div>
 
           <div className="divide-y divide-slate-800">
@@ -385,12 +388,12 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
                   <span
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black ${
                       s.place === 1
-                        ? 'bg-yellow-400 text-black'
+                        ? 'bg-amber-400 text-slate-950 shadow-md'
                         : s.place === 2
-                        ? 'bg-slate-300 text-black'
+                        ? 'bg-slate-300 text-slate-950'
                         : s.place === 3
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-slate-800 text-slate-400'
+                        ? 'bg-amber-700 text-white'
+                        : 'bg-slate-900 text-slate-400 border border-slate-800'
                     }`}
                   >
                     {s.place}
@@ -409,17 +412,20 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
       {/* Report Result Modal */}
       {reportModalOpen && activeMatch && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white text-center">Reportar Mesa {activeMatch.tableNumber}</h3>
-            <p className="text-xs text-slate-400 text-center">
-              Selecione o vencedor da partida. Seu oponente receberá a notificação para confirmar.
+          <div className="bg-[#101726] border border-amber-900/40 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-center mb-1">
+              <ColiseuIcon size={44} />
+            </div>
+            <h3 className="text-lg font-black text-white text-center">Reportar Mesa {activeMatch.tableNumber}</h3>
+            <p className="text-xs text-amber-200/70 text-center">
+              Selecione o vencedor da partida. Seu oponente receberá a notificação para confirmar na arena.
             </p>
 
             <div className="space-y-2 pt-2">
               <button
                 disabled={isSubmitting}
                 onClick={() => handleReport(activeMatch.player.userid, false)}
-                className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl text-sm transition-all shadow-md active:scale-98"
+                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold rounded-xl text-sm transition-all shadow-md active:scale-98"
               >
                 Eu Venci ({activeMatch.player.fullName})
               </button>
@@ -428,7 +434,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
                 <button
                   disabled={isSubmitting}
                   onClick={() => handleReport(activeMatch.opponent!.userid, false)}
-                  className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-sm transition-all shadow-md active:scale-98"
+                  className="w-full py-3 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-bold rounded-xl text-sm transition-all shadow-md active:scale-98"
                 >
                   Oponente Venceu ({activeMatch.opponent.fullName})
                 </button>
@@ -437,7 +443,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
               <button
                 disabled={isSubmitting}
                 onClick={() => handleReport(null, true)}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-sm transition-all border border-slate-700"
+                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold rounded-xl text-sm transition-all border border-amber-900/40"
               >
                 Empate (Tie)
               </button>
@@ -445,7 +451,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
 
             <button
               onClick={() => setReportModalOpen(false)}
-              className="w-full py-2 text-xs text-slate-500 hover:text-slate-300 font-semibold text-center"
+              className="w-full py-2 text-xs text-slate-400 hover:text-white font-semibold text-center"
             >
               Cancelar
             </button>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Shield, User, Trophy, RefreshCw } from 'lucide-react';
+import { Shield, User, RefreshCw } from 'lucide-react';
+import { ColiseuIcon } from './ColiseuIcon';
 
 interface HeaderProps {
   tournamentName: string;
@@ -19,45 +20,46 @@ export const Header: React.FC<HeaderProps> = ({
   isSyncing
 }) => {
   return (
-    <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 shadow-md">
+    <header className="sticky top-0 z-50 bg-[#090D16]/95 backdrop-blur border-b border-amber-900/30 px-4 py-3 shadow-xl">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-full bg-red-600 border-2 border-white flex items-center justify-center shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 w-full h-1/2 bg-red-600" />
-            <div className="absolute bottom-0 w-full h-1/2 bg-white" />
-            <div className="absolute top-[42%] w-full h-1 bg-black z-10" />
-            <div className="absolute w-3.5 h-3.5 rounded-full bg-white border-2 border-black z-20" />
-          </div>
+          <ColiseuIcon size={40} />
           <div>
-            <h1 className="text-base font-bold leading-tight tracking-tight text-white flex items-center gap-2">
-              {tournamentName || 'Pokémon TCG'}
+            <div className="flex items-center gap-2">
+              <span className="text-base font-black tracking-tight text-white flex items-center gap-1.5">
+                COLISEU <span className="text-amber-400">TCG</span>
+              </span>
               {currentRound > 0 && (
-                <span className="bg-yellow-400/20 text-yellow-300 text-xs px-2 py-0.5 rounded-full font-semibold border border-yellow-400/30">
+                <span className="bg-amber-400/20 text-amber-300 text-[11px] px-2 py-0.5 rounded-full font-bold border border-amber-400/30">
                   R{currentRound}
                 </span>
               )}
-            </h1>
-            <p className="text-xs text-slate-400">Companion &amp; Pareamento TOM</p>
+            </div>
+            <p className="text-xs text-amber-200/60 flex items-center gap-1.5 font-medium">
+              <span className="truncate max-w-[170px] sm:max-w-xs">{tournamentName || 'Arena Pokémon TCG'}</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">TOM Companion</span>
+            </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
           <button
             onClick={onRefresh}
-            className={`p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors ${
-              isSyncing ? 'animate-spin text-yellow-400' : ''
+            className={`p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors ${
+              isSyncing ? 'animate-spin text-amber-400' : ''
             }`}
             title="Atualizar dados"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
 
-          <div className="bg-slate-800 p-1 rounded-lg flex items-center space-x-1 border border-slate-700">
+          <div className="bg-slate-900/90 p-1 rounded-xl flex items-center space-x-1 border border-slate-800">
             <button
               onClick={() => setViewMode('player')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'player'
-                  ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -66,9 +68,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('admin')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'admin'
-                  ? 'bg-red-600 text-white shadow-sm font-semibold'
+                  ? 'bg-red-700 text-white shadow-md shadow-red-700/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >

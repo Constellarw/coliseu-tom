@@ -1,4 +1,6 @@
 import { createRequire } from 'node:module';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
 
 const require = createRequire(import.meta.url);
@@ -8,6 +10,13 @@ export class DatabaseService {
   public db: DatabaseSyncType;
 
   constructor(filePath: string = ':memory:') {
+    if (filePath !== ':memory:') {
+      try {
+        mkdirSync(dirname(filePath), { recursive: true });
+      } catch {
+        // Directory already exists or path is in cwd
+      }
+    }
     this.db = new DatabaseSync(filePath);
     this.initSchema();
   }

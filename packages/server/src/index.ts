@@ -174,15 +174,22 @@ export function buildServer(dbPath?: string) {
   return { fastify, tourneyService, reportService, dbService };
 }
 
-// Start standalone server if executed directly
-if (process.argv[1] && process.argv[1].endsWith('index.js')) {
+export async function startServer() {
   const { fastify } = buildServer();
   const PORT = Number(process.env.PORT || 3001);
-  fastify.listen({ port: PORT, host: '0.0.0.0' }, (err, address) => {
-    if (err) {
-      fastify.log.error(err);
-      process.exit(1);
-    }
-    console.log(`Pokemon TOM Server listening on ${address}`);
+  const address = await fastify.listen({ port: PORT, host: '0.0.0.0' });
+  console.log(`\n======================================================`);
+  console.log(`  🏛️  COLISEU TCG • Pokémon TOM Platform Server`);
+  console.log(`  🌐 Acesse no navegador: http://localhost:${PORT}`);
+  console.log(`  📡 API & WebSockets em: ${address}`);
+  console.log(`======================================================\n`);
+  return fastify;
+}
+
+// Start standalone server if executed directly
+if (process.argv[1] && (process.argv[1].endsWith('index.js') || process.argv[1].includes('server'))) {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
   });
 }

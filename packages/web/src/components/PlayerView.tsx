@@ -445,7 +445,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
                 onClick={() => handleReport(null, true)}
                 className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl text-sm transition-all border border-zinc-800"
               >
-                Empate (Tie)
+                Empate
               </button>
             </div>
 

@@ -42,7 +42,7 @@ export class MatchReportService {
       throw new Error(`Player ${reportingPlayerId} is not a participant of match ${matchId}`);
     }
 
-    const reportedValue = isTie ? 'TIE' : (winnerId || reportingPlayerId);
+    const reportedValue = isTie ? 'EMPATE' : (winnerId || reportingPlayerId);
     let p1Report = isP1 ? reportedValue : match.p1_reported_winner;
     let p2Report = isP2 ? reportedValue : match.p2_reported_winner;
 
@@ -51,10 +51,13 @@ export class MatchReportService {
     let finalIsTie = 0;
     let tomOutcome = match.tom_outcome || '0';
 
+    const isP1Tie = p1Report === 'TIE' || p1Report === 'EMPATE';
+    const isP2Tie = p2Report === 'TIE' || p2Report === 'EMPATE';
+
     if (p1Report && p2Report) {
-      if (p1Report === p2Report) {
+      if (p1Report === p2Report || (isP1Tie && isP2Tie)) {
         status = 'CONFIRMED';
-        if (p1Report === 'TIE') {
+        if (isP1Tie) {
           finalIsTie = 1;
           confirmedWinnerId = null;
           tomOutcome = '3';

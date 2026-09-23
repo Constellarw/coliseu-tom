@@ -10,11 +10,13 @@
     "build": "npm run build --workspaces --if-present",
     "start": "node packages/server/dist/index.js",
     "dev": "npm run dev -w packages/web",
+    "tunnel": "node tunnel.mjs",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
+    "untun": "^0.2.2",
     "vitest": "^2.0.5"
   }
 }

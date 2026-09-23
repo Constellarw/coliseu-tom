@@ -70,7 +70,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
           <img src="/logo_coliseu_web.png" alt="Coliseu TCG" className="h-16 w-auto object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.25)]" />
         </div>
         <h2 className="text-xl font-black text-white mb-1 tracking-tight">
-          Arena Coliseu TCG
+          Coliseu Arena
         </h2>
         <p className="text-xs text-zinc-400 mb-6">
           Informe seu POP ID (Pokémon Player ID) para entrar na arena, acompanhar sua mesa e reportar resultados.
@@ -373,7 +373,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
           <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <Trophy className="w-4 h-4 text-red-500" />
-              Classificação Coliseu TCG
+              Classificação Coliseu Arena
             </h3>
             <span className="text-xs text-red-400/90 font-mono font-bold">{standings.length} Jogadores</span>
           </div>

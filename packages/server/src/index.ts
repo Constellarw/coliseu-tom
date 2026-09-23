@@ -51,6 +51,16 @@ export function buildServer(dbPath?: string) {
   // Health check
   fastify.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 
+  // Judge authentication
+  fastify.post('/api/auth/judge', async (req, reply) => {
+    const body = (req.body as { password?: string }) || {};
+    const validPassword = process.env.JUDGE_PASSWORD || 'coliseu123';
+    if (body.password === validPassword) {
+      return { success: true, message: 'Autenticado com sucesso como Juiz' };
+    }
+    return reply.code(401).send({ error: 'Senha incorreta. Acesso exclusivo para Juízes e Organizadores.' });
+  });
+
   // WebSocket route for real-time live events
   fastify.register(async function (fastifyWs) {
     fastifyWs.get('/ws/tournament/:id', { websocket: true }, (connection: any, req) => {

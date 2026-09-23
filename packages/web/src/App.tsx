@@ -2,15 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { PlayerView } from './components/PlayerView';
 import { AdminView } from './components/AdminView';
+import { JudgeLoginModal } from './components/JudgeLoginModal';
 
 export const App: React.FC = () => {
   const [tournamentId, setTournamentId] = useState<string>('tourney-1');
   const [viewMode, setViewMode] = useState<'player' | 'admin'>('player');
+  const [isJudgeAuthenticated, setIsJudgeAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('coliseu_judge_auth') === 'true';
+  });
+  const [isJudgeModalOpen, setIsJudgeModalOpen] = useState<boolean>(false);
+
   const [popId, setPopIdState] = useState<string>(() => {
     return localStorage.getItem('poketom_popId') || '';
   });
 
-  const [tournamentName, setTournamentName] = useState<string>('Coliseu TCG • Torneio Pokémon');
+  const [tournamentName, setTournamentName] = useState<string>('Torneio Pokémon TCG');
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [activeMatch, setActiveMatch] = useState<any | null>(null);
   const [pairings, setPairings] = useState<any[]>([]);
@@ -169,13 +175,34 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleJudgeLoginSuccess = () => {
+    setIsJudgeAuthenticated(true);
+    sessionStorage.setItem('coliseu_judge_auth', 'true');
+    setViewMode('admin');
+    setIsJudgeModalOpen(false);
+  };
+
+  const handleJudgeLogout = () => {
+    setIsJudgeAuthenticated(false);
+    sessionStorage.removeItem('coliseu_judge_auth');
+    setViewMode('player');
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 flex flex-col">
       <Header
         tournamentName={tournamentName}
-        currentRound={currentRound}
         viewMode={viewMode}
-        setViewMode={setViewMode}
+        setViewMode={(mode) => {
+          if (mode === 'admin' && !isJudgeAuthenticated) {
+            setIsJudgeModalOpen(true);
+            return;
+          }
+          setViewMode(mode);
+        }}
+        isJudgeAuthenticated={isJudgeAuthenticated}
+        onOpenJudgeLogin={() => setIsJudgeModalOpen(true)}
+        onJudgeLogout={handleJudgeLogout}
         onRefresh={fetchAllData}
         isSyncing={isSyncing}
       />
@@ -191,7 +218,7 @@ export const App: React.FC = () => {
             onReportMatch={handleReportMatch}
             isLoading={isSyncing}
           />
-        ) : (
+        ) : isJudgeAuthenticated ? (
           <AdminView
             tournamentId={tournamentId}
             reportsQueue={reportsQueue}
@@ -199,11 +226,30 @@ export const App: React.FC = () => {
             onJudgeOverride={handleJudgeOverride}
             isUploading={isUploading}
           />
+        ) : (
+          <div className="max-w-md mx-auto mt-12 p-6 bg-[#121216] border border-zinc-800 rounded-2xl text-center shadow-xl">
+            <h3 className="text-base font-bold text-white mb-2">Acesso Restrito</h3>
+            <p className="text-xs text-zinc-400 mb-4">
+              Você precisa estar autenticado como Juiz para visualizar este painel.
+            </p>
+            <button
+              onClick={() => setIsJudgeModalOpen(true)}
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold"
+            >
+              Fazer Login como Juiz
+            </button>
+          </div>
         )}
       </main>
 
+      <JudgeLoginModal
+        isOpen={isJudgeModalOpen}
+        onClose={() => setIsJudgeModalOpen(false)}
+        onSuccess={handleJudgeLoginSuccess}
+      />
+
       <footer className="py-5 border-t border-zinc-900 text-center text-xs text-zinc-500 flex flex-wrap items-center justify-center gap-2 px-4">
-        <span className="font-bold text-red-500">Coliseu TCG</span>
+        <span className="font-bold text-red-500">Coliseu Arena</span>
         <span>&bull;</span>
         <span className="text-zinc-400">Card Game &amp; Colecionáveis</span>
         <span>&bull;</span>

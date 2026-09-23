@@ -63,8 +63,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
             handleFile(e.dataTransfer.files[0]);
           }
         }}
-        className={`bg-slate-900 border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
-          dragOver ? 'border-yellow-400 bg-yellow-400/5' : 'border-slate-700/80 hover:border-slate-600'
+        className={`bg-[#121216] border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
+          dragOver ? 'border-red-500 bg-red-500/10' : 'border-zinc-800 hover:border-zinc-700'
         }`}
       >
         <input
@@ -79,14 +79,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
           }}
         />
 
-        <div className="w-12 h-12 bg-red-600/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-red-500/30">
+        <div className="w-12 h-12 bg-red-600/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 border border-red-500/30">
           <Upload className="w-6 h-6" />
         </div>
 
         <h3 className="text-base font-bold text-white mb-1">
           Importar Arquivo do TOM (.tdf)
         </h3>
-        <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
+        <p className="text-xs text-zinc-400 max-w-md mx-auto mb-4">
           Arraste o arquivo <strong>.tdf</strong> salvo pelo TOM da rodada atual ou clique no botão abaixo para atualizar as mesas e pareamentos de todos os jogadores instantaneamente.
         </p>
 
@@ -109,7 +109,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </button>
 
         {uploadSuccess && (
-          <div className="mt-3 text-xs text-green-400 font-semibold flex items-center justify-center gap-1">
+          <div className="mt-3 text-xs text-emerald-400 font-semibold flex items-center justify-center gap-1">
             <Check className="w-4 h-4" />
             <span>Torneio e pareamentos sincronizados com sucesso!</span>
           </div>
@@ -117,32 +117,32 @@ export const AdminView: React.FC<AdminViewProps> = ({
       </div>
 
       {/* Live reports queue */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div className="bg-[#121216] border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-yellow-400" />
+              <ShieldAlert className="w-4 h-4 text-red-500" />
               Fila de Resultados &amp; Juiz
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-zinc-400">
               Acompanhe os reports enviados pelos jogadores e confirme para lançamento no TOM.
             </p>
           </div>
-          <span className="text-xs bg-slate-800 text-slate-300 font-mono px-2.5 py-1 rounded-full border border-slate-700">
+          <span className="text-xs bg-zinc-900 text-zinc-300 font-mono px-2.5 py-1 rounded-full border border-zinc-800">
             {reportsQueue.length} mesa(s)
           </span>
         </div>
 
         {reportsQueue.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-sm">
+          <div className="p-8 text-center text-zinc-500 text-sm">
             Nenhum resultado reportado nesta rodada ainda.
           </div>
         ) : (
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-zinc-800">
             {reportsQueue.map((m) => (
               <div key={m.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center space-x-3">
-                  <span className="w-10 h-10 rounded-lg bg-yellow-400 text-slate-950 flex items-center justify-center font-black text-sm">
+                  <span className="w-10 h-10 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white flex items-center justify-center font-black text-sm shadow">
                     {m.table_number}
                   </span>
                   <div>
@@ -151,7 +151,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         {m.p1_name} vs {m.p2_name}
                       </span>
                       {m.status === 'CONFIRMED' && (
-                        <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-green-500/30">
+                        <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">
                           CONFIRMADO
                         </span>
                       )}
@@ -166,9 +166,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Report P1: <span className="text-slate-300">{m.p1_reported_winner || '—'}</span> | Report P2:{' '}
-                      <span className="text-slate-300">{m.p2_reported_winner || '—'}</span>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Report P1: <span className="text-zinc-300">{m.p1_reported_winner || '—'}</span> | Report P2:{' '}
+                      <span className="text-zinc-300">{m.p2_reported_winner || '—'}</span>
                     </p>
                   </div>
                 </div>
@@ -177,21 +177,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <div className="flex items-center space-x-2 self-end md:self-center">
                   <button
                     onClick={() => onJudgeOverride(m.id, m.player1_id, false)}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg font-medium transition-colors border border-slate-700"
+                    className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs rounded-lg font-medium transition-colors border border-zinc-800"
                     title="Definir Jogador 1 como Vencedor"
                   >
                     P1 Venceu
                   </button>
                   <button
                     onClick={() => onJudgeOverride(m.id, m.player2_id, false)}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg font-medium transition-colors border border-slate-700"
+                    className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs rounded-lg font-medium transition-colors border border-zinc-800"
                     title="Definir Jogador 2 como Vencedor"
                   >
                     P2 Venceu
                   </button>
                   <button
                     onClick={() => onJudgeOverride(m.id, null, true)}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg font-medium transition-colors border border-slate-700"
+                    className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs rounded-lg font-medium transition-colors border border-zinc-800"
                     title="Definir Empate"
                   >
                     Empate

@@ -20,25 +20,29 @@ export const Header: React.FC<HeaderProps> = ({
   isSyncing
 }) => {
   return (
-    <header className="sticky top-0 z-50 bg-[#090D16]/95 backdrop-blur border-b border-amber-900/30 px-4 py-3 shadow-xl">
+    <header className="sticky top-0 z-50 bg-[#0A0A0C]/95 backdrop-blur border-b border-red-950/40 px-4 py-2.5 shadow-2xl">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <ColiseuIcon size={40} />
-          <div>
+          <img
+            src="/logo_coliseu_web.png"
+            alt="Coliseu TCG"
+            className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_2px_12px_rgba(220,38,38,0.25)]"
+          />
+          <div className="border-l border-zinc-800/80 pl-3">
             <div className="flex items-center gap-2">
-              <span className="text-base font-black tracking-tight text-white flex items-center gap-1.5">
-                COLISEU <span className="text-amber-400">TCG</span>
+              <span className="text-sm font-black tracking-tight text-white hidden sm:inline">
+                ARENA <span className="text-red-500">TOM</span>
               </span>
               {currentRound > 0 && (
-                <span className="bg-amber-400/20 text-amber-300 text-[11px] px-2 py-0.5 rounded-full font-bold border border-amber-400/30">
+                <span className="bg-red-500/20 text-red-400 text-[11px] px-2 py-0.5 rounded-full font-bold border border-red-500/30">
                   R{currentRound}
                 </span>
               )}
             </div>
-            <p className="text-xs text-amber-200/60 flex items-center gap-1.5 font-medium">
-              <span className="truncate max-w-[170px] sm:max-w-xs">{tournamentName || 'Arena Pokémon TCG'}</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">TOM Companion</span>
+            <p className="text-xs text-zinc-400 flex items-center gap-1.5 font-medium">
+              <span className="truncate max-w-[150px] sm:max-w-xs">{tournamentName || 'Torneio Pokémon TCG'}</span>
+              <span className="text-zinc-600">•</span>
+              <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Ao Vivo</span>
             </p>
           </div>
         </div>
@@ -46,21 +50,21 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center space-x-2">
           <button
             onClick={onRefresh}
-            className={`p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors ${
-              isSyncing ? 'animate-spin text-amber-400' : ''
+            className={`p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition-colors ${
+              isSyncing ? 'animate-spin text-red-500' : ''
             }`}
             title="Atualizar dados"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
 
-          <div className="bg-slate-900/90 p-1 rounded-xl flex items-center space-x-1 border border-slate-800">
+          <div className="bg-zinc-900/90 p-1 rounded-xl flex items-center space-x-1 border border-zinc-800">
             <button
               onClick={() => setViewMode('player')}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'player'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
               <User className="w-3.5 h-3.5" />
@@ -70,8 +74,8 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setViewMode('admin')}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'admin'
-                  ? 'bg-red-700 text-white shadow-md shadow-red-700/20'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-zinc-800 text-red-400 border border-red-500/30 shadow-md'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
               <Shield className="w-3.5 h-3.5" />

@@ -8,15 +8,15 @@ export default {
     extend: {
       colors: {
         coliseu: {
-          gold: '#F59E0B',
-          'gold-light': '#FBBF24',
-          'gold-dark': '#B45309',
-          crimson: '#DC2626',
-          'crimson-dark': '#7F1D1D',
-          arena: '#090D16',
-          stone: '#131B2E',
-          card: '#101726',
-          border: '#1E293B'
+          red: '#DC2626',
+          'red-light': '#EF4444',
+          'red-dark': '#991B1B',
+          'red-crimson': '#B91C1C',
+          dark: '#0A0A0C',
+          surface: '#121216',
+          card: '#18181D',
+          border: '#27272A',
+          muted: '#71717A'
         }
       }
     },

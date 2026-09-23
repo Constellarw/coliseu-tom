@@ -170,7 +170,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-amber-50 flex flex-col">
+    <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 flex flex-col">
       <Header
         tournamentName={tournamentName}
         currentRound={currentRound}
@@ -202,10 +202,10 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-4 border-t border-amber-900/20 text-center text-xs text-amber-400/60 flex items-center justify-center gap-2">
-        <span className="font-bold text-amber-400">Arena Coliseu TCG</span>
+      <footer className="py-5 border-t border-zinc-900 text-center text-xs text-zinc-500 flex flex-wrap items-center justify-center gap-2 px-4">
+        <span className="font-bold text-red-500">Coliseu TCG</span>
         <span>&bull;</span>
-        <span>Mogi Guaçu - SP</span>
+        <span className="text-zinc-400">Card Game &amp; Colecionáveis</span>
         <span>&bull;</span>
         <span>Compatível com Pokémon Tournament Operations Manager (TOM)</span>
       </footer>

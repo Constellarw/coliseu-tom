@@ -13,4 +13,5 @@ export declare function buildServer(dbPath?: string): {
     profileService: ProfileService;
 };
 export declare function startServer(): Promise<Fastify.FastifyInstance<import("http").Server<typeof import("http").IncomingMessage, typeof import("http").ServerResponse>, import("http").IncomingMessage, import("http").ServerResponse<import("http").IncomingMessage>, Fastify.FastifyBaseLogger, Fastify.FastifyTypeProviderDefault>>;
+export default function handler(req: any, res: any): Promise<void>;
 //# sourceMappingURL=index.d.ts.map

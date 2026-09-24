@@ -55,12 +55,28 @@ export function buildServer(dbPath) {
     const wsClients = new Map();
     fastify.register(cors, { origin: '*' });
     fastify.register(websocket);
-    // Serve static web app if built
-    const webDistPath = resolve(__dirname, '../../web/dist');
-    if (existsSync(webDistPath)) {
+    // Serve static web app if built (supporting monorepo root, package dir, or vercel paths)
+    const possiblePaths = [
+        resolve(__dirname, '../../web/dist'),
+        resolve(__dirname, '../web/dist'),
+        resolve(__dirname, '../dist'),
+        resolve(__dirname, '.'),
+        resolve(process.cwd(), 'dist'),
+        resolve(process.cwd(), 'packages/web/dist'),
+        resolve(process.cwd(), 'packages/server/dist')
+    ];
+    const staticRoot = possiblePaths.find((p) => existsSync(resolve(p, 'index.html')));
+    if (staticRoot) {
         fastify.register(fastifyStatic, {
-            root: webDistPath,
-            prefix: '/'
+            root: staticRoot,
+            prefix: '/',
+            wildcard: false
+        });
+        fastify.setNotFoundHandler((req, reply) => {
+            if (!req.url.startsWith('/api') && !req.url.startsWith('/ws')) {
+                return reply.sendFile('index.html', staticRoot);
+            }
+            reply.code(404).send({ error: 'Route not found' });
         });
     }
     function broadcast(tournamentId, event, payload) {
@@ -329,5 +345,24 @@ if (process.argv[1] && (process.argv[1].endsWith('index.js') || process.argv[1].
         console.error('Failed to start server:', err);
         process.exit(1);
     });
+}
+// Vercel Serverless Function export
+let serverlessAppPromise = null;
+async function getVercelServerlessApp() {
+    if (!serverlessAppPromise) {
+        serverlessAppPromise = (async () => {
+            const { fastify, dbService } = buildServer();
+            if (dbService.isRemote) {
+                await dbService.initSchema();
+            }
+            await fastify.ready();
+            return fastify;
+        })();
+    }
+    return serverlessAppPromise;
+}
+export default async function handler(req, res) {
+    const app = await getVercelServerlessApp();
+    app.server.emit('request', req, res);
 }
 //# sourceMappingURL=index.js.map

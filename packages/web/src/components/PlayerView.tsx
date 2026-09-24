@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
-import { Swords, Trophy, Users, CheckCircle2, AlertTriangle, Clock, Search, LogOut } from 'lucide-react';
+import {
+  Swords,
+  Trophy,
+  Users,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Search,
+  LogOut,
+  ShieldCheck,
+  User,
+  ArrowRight,
+  Eye,
+  Award
+} from 'lucide-react';
 import { ColiseuIcon } from './ColiseuIcon';
+import { UserRecord } from '../types/auth';
 
 interface PlayerMatchView {
   matchId: string;
@@ -45,6 +60,10 @@ interface PlayerViewProps {
   standings: StandingView[];
   onReportMatch: (winnerId: string | null, isTie: boolean) => Promise<void>;
   isLoading: boolean;
+  user: UserRecord | null;
+  onOpenGoogleLogin: () => void;
+  onOpenBindModal: () => void;
+  onOpenProfile: () => void;
 }
 
 export const PlayerView: React.FC<PlayerViewProps> = ({
@@ -54,76 +73,105 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
   pairings,
   standings,
   onReportMatch,
-  isLoading
+  isLoading,
+  user,
+  onOpenGoogleLogin,
+  onOpenBindModal,
+  onOpenProfile
 }) => {
   const [activeTab, setActiveTab] = useState<'match' | 'pairings' | 'standings'>('match');
-  const [inputPopId, setInputPopId] = useState('');
+  const [viewingAsGuest, setViewingAsGuest] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [reportModalOpen, setReportModalOpen] = useState(false);
 
-  // If player hasn't entered their POP ID yet
-  if (!popId) {
+  // 1. Not logged in and not in guest mode
+  if (!user && !viewingAsGuest) {
     return (
-      <div className="max-w-md mx-auto mt-8 p-6 bg-[#121216] rounded-2xl border border-zinc-800 shadow-2xl text-center">
+      <div className="max-w-md mx-auto mt-8 p-6 bg-[#121216] rounded-2xl border border-zinc-800 shadow-2xl text-center animate-fadeIn">
         <div className="flex justify-center mb-4">
-          <img src="/logo_coliseu_web.png" alt="Coliseu TCG" className="h-16 w-auto object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.25)]" />
+          <img
+            src="/logo_coliseu_web.png"
+            alt="Coliseu TCG"
+            className="h-16 w-auto object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.25)]"
+          />
         </div>
         <h2 className="text-xl font-black text-white mb-1 tracking-tight">
           Coliseu Arena
         </h2>
-        <p className="text-xs text-zinc-400 mb-6">
-          Informe seu POP ID (Pokémon Player ID) para entrar na arena, acompanhar sua mesa e reportar resultados.
+        <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
+          Entre com sua conta Google para acompanhar sua mesa em tempo real, consultar seu histórico oficial e reportar resultados com proteção de identidade.
         </p>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (inputPopId.trim()) setPopId(inputPopId.trim());
-          }}
-          className="space-y-4"
-        >
-          <input
-            type="text"
-            value={inputPopId}
-            onChange={(e) => setInputPopId(e.target.value)}
-            placeholder="Ex: 987654321"
-            className="w-full px-4 py-3 bg-[#0A0A0C] border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-600 text-center text-lg font-mono tracking-wider"
-            autoFocus
-          />
+        <div className="space-y-3">
           <button
-            type="submit"
-            disabled={!inputPopId.trim()}
-            className="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:opacity-50 text-white font-black rounded-xl transition-all shadow-lg shadow-red-600/25 active:scale-98"
+            onClick={onOpenGoogleLogin}
+            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-600/30 active:scale-98 flex items-center justify-center space-x-2 text-sm"
           >
-            Entrar na Arena
+            <User className="w-4 h-4" />
+            <span>Entrar com o Google</span>
           </button>
-        </form>
 
-        {pairings.length > 0 && (
-          <div className="mt-8 text-left border-t border-zinc-800 pt-4">
-            <span className="text-[11px] text-red-400 uppercase font-bold tracking-wider">
-              Ou escolha seu nome na lista da rodada:
-            </span>
-            <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5 pr-1">
-              {pairings.flatMap(p => [p.player1, p.player2]).filter(Boolean).map((p: any) => (
-                <button
-                  key={p.userid}
-                  onClick={() => setPopId(p.userid)}
-                  className="w-full text-left px-3 py-2 text-xs rounded-lg bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 flex justify-between items-center transition-colors border border-zinc-800/80"
-                >
-                  <span className="font-semibold text-white">{p.fullName}</span>
-                  <span className="font-mono text-red-400">{p.userid}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+          <button
+            onClick={() => {
+              setViewingAsGuest(true);
+              setActiveTab('pairings');
+            }}
+            className="w-full py-3 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 font-bold rounded-xl transition-colors border border-zinc-800 flex items-center justify-center space-x-2 text-xs"
+          >
+            <Eye className="w-4 h-4 text-zinc-400" />
+            <span>Consultar Mesas e Tabela (Visitante)</span>
+          </button>
+        </div>
+
+        <div className="mt-8 pt-4 border-t border-zinc-800/80 text-[11px] text-zinc-500">
+          🔒 Sistema com verificação anti-fraude integrado ao Pokémon TOM.
+        </div>
       </div>
     );
   }
 
-  const filteredPairings = pairings.filter(p => {
+  // 2. Logged in but has not bound their POP ID yet
+  if (user && !user.pop_id && !viewingAsGuest) {
+    return (
+      <div className="max-w-md mx-auto mt-8 p-6 bg-[#121216] rounded-2xl border border-zinc-800 shadow-2xl text-center animate-fadeIn">
+        <div className="w-12 h-12 rounded-2xl bg-red-600/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+          <ShieldCheck className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-black text-white mb-1 tracking-tight">
+          Vincular POP ID Oficial
+        </h2>
+        <p className="text-xs text-zinc-300 mb-1">
+          Olá, <strong className="text-white">{user.name}</strong>!
+        </p>
+        <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
+          Para garantir que ninguém reporte partidas no seu lugar, vincule seu POP ID registrado no torneio.
+        </p>
+
+        <div className="space-y-3">
+          <button
+            onClick={onOpenBindModal}
+            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-600/30 active:scale-98 flex items-center justify-center space-x-2 text-sm"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Vincular Meu POP ID Agora</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setViewingAsGuest(true);
+              setActiveTab('pairings');
+            }}
+            className="w-full py-2.5 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white font-medium rounded-xl transition-colors text-xs"
+          >
+            Apenas consultar mesas por enquanto
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredPairings = pairings.filter((p) => {
     const q = searchQuery.toLowerCase();
     return (
       String(p.tableNumber).includes(q) ||
@@ -135,6 +183,15 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
   });
 
   const handleReport = async (winnerId: string | null, isTie: boolean) => {
+    if (!user) {
+      onOpenGoogleLogin();
+      return;
+    }
+    if (!user.pop_id) {
+      onOpenBindModal();
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await onReportMatch(winnerId, isTie);
@@ -146,24 +203,46 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
-      {/* Player header bar */}
-      <div className="bg-[#121216] border border-zinc-800 rounded-xl px-4 py-2.5 flex items-center justify-between shadow-md">
-        <div className="flex items-center space-x-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs text-zinc-400">Gladiador:</span>
-          <span className="text-sm font-bold text-white">
-            {activeMatch?.player.fullName || `ID: ${popId}`}
-          </span>
-          <span className="text-xs text-red-400 font-mono">({popId})</span>
+      {/* Guest Mode Notice */}
+      {(!user || !user.pop_id) && viewingAsGuest && (
+        <div className="bg-amber-950/30 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between text-xs text-amber-300">
+          <div className="flex items-center space-x-2">
+            <Eye className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span>Você está no <strong>Modo Visitante</strong>. Para ver sua mesa e reportar, entre com seu perfil oficial.</span>
+          </div>
+          <button
+            onClick={user ? onOpenBindModal : onOpenGoogleLogin}
+            className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-[11px] whitespace-nowrap ml-2"
+          >
+            {user ? 'Vincular ID' : 'Fazer Login'}
+          </button>
         </div>
-        <button
-          onClick={() => setPopId('')}
-          className="text-xs text-zinc-400 hover:text-red-400 flex items-center gap-1 transition-colors"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span>Trocar</span>
-        </button>
-      </div>
+      )}
+
+      {/* Authenticated Player Status Bar */}
+      {user && user.pop_id && (
+        <div className="bg-[#121216] border border-zinc-800 rounded-xl px-4 py-2.5 flex items-center justify-between shadow-md">
+          <div className="flex items-center space-x-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-400">Gladiador:</span>
+                <span className="text-sm font-bold text-white">
+                  {user.name}
+                </span>
+                <span className="text-xs text-red-400 font-mono">({user.pop_id})</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onOpenProfile}
+            className="text-xs text-zinc-400 hover:text-red-400 flex items-center gap-1.5 transition-colors font-medium"
+          >
+            <Award className="w-3.5 h-3.5 text-amber-500" />
+            <span>Meu Histórico</span>
+          </button>
+        </div>
+      )}
 
       {/* Tabs navigation */}
       <div className="grid grid-cols-3 gap-2 bg-[#121216] p-1 rounded-xl border border-zinc-800 shadow-sm">
@@ -205,7 +284,21 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
       {/* Tab 1: Active Match */}
       {activeTab === 'match' && (
         <div className="space-y-4">
-          {activeMatch ? (
+          {!user || !user.pop_id ? (
+            <div className="bg-[#121216] border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
+              <Swords className="w-10 h-10 text-red-500 mx-auto" />
+              <h3 className="text-base font-bold text-white">Visualização de Mesa Bloqueada</h3>
+              <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                Para carregar a sua mesa e rodada atual automaticamente, autentique-se e vincule seu POP ID oficial.
+              </p>
+              <button
+                onClick={user ? onOpenBindModal : onOpenGoogleLogin}
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs"
+              >
+                {user ? 'Vincular POP ID' : 'Fazer Login com Google'}
+              </button>
+            </div>
+          ) : activeMatch ? (
             <div className="bg-gradient-to-b from-[#16161C] to-[#0D0D10] border border-red-950/60 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
               {/* Highlight table header */}
               <div className="flex items-center justify-between mb-6">
@@ -218,164 +311,182 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
                 </span>
               </div>
 
-              {/* Matchup view */}
+              {/* Matchup Duel display */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-                {/* You */}
-                <div className="bg-[#18181F] p-4 rounded-xl border border-red-500/30 flex items-center space-x-3 shadow">
-                  <div className="w-11 h-11 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center shadow-md">
-                    VOCÊ
-                  </div>
-                  <div>
-                    <p className="font-bold text-base text-white">{activeMatch.player.fullName}</p>
-                    <p className="text-xs text-red-400 font-mono">POP ID: {activeMatch.player.userid}</p>
-                  </div>
+                {/* Player 1 (You) */}
+                <div className="bg-[#121216] p-4 rounded-xl border border-red-900/40 relative">
+                  <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider block mb-1">
+                    Você
+                  </span>
+                  <p className="text-lg font-black text-white">{activeMatch.player.fullName}</p>
+                  <p className="text-xs text-zinc-400 font-mono mt-0.5">POP ID: {activeMatch.player.userid}</p>
                 </div>
 
                 {/* Opponent */}
-                <div className="bg-[#18181F] p-4 rounded-xl border border-zinc-800 flex items-center space-x-3 shadow">
-                  <div className="w-11 h-11 rounded-full bg-zinc-800 text-zinc-300 font-black text-xs flex items-center justify-center shadow-md border border-zinc-700">
-                    VS
-                  </div>
-                  <div>
-                    <p className="font-bold text-base text-white">
-                      {activeMatch.opponent ? activeMatch.opponent.fullName : 'BYE (Sem oponente)'}
-                    </p>
-                    <p className="text-xs text-zinc-400 font-mono">
-                      {activeMatch.opponent ? `POP ID: ${activeMatch.opponent.userid}` : 'Vitória automática'}
-                    </p>
-                  </div>
+                <div className="bg-[#121216] p-4 rounded-xl border border-zinc-800 relative">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mb-1">
+                    Oponente
+                  </span>
+                  {activeMatch.opponent ? (
+                    <>
+                      <p className="text-lg font-black text-white">{activeMatch.opponent.fullName}</p>
+                      <p className="text-xs text-zinc-400 font-mono mt-0.5">POP ID: {activeMatch.opponent.userid}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-bold text-amber-400 italic">BYE (Vitória Automática)</p>
+                  )}
                 </div>
               </div>
 
-              {/* Status Alert */}
-              <div className="mb-6">
-                {activeMatch.status === 'IN_PROGRESS' && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-                    <p className="text-sm text-red-300 font-medium">
-                      Duelo na Arena em andamento! Ao finalizar, registre o resultado abaixo.
-                    </p>
+              {/* Status & Actions */}
+              <div className="border-t border-zinc-800 pt-4">
+                {activeMatch.status === 'CONFIRMED' ? (
+                  <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-4 flex items-center space-x-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-300">Resultado Oficial Confirmado</h4>
+                      <p className="text-xs text-zinc-300">
+                        {activeMatch.isTie
+                          ? 'Empate validado com sucesso.'
+                          : activeMatch.confirmedWinnerId === popId
+                          ? 'Parabéns, sua vitória foi registrada!'
+                          : 'Derrota confirmada.'}
+                      </p>
+                    </div>
                   </div>
-                )}
-                {activeMatch.status === 'PENDING_CONFIRMATION' && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center flex items-center justify-center gap-2">
-                    <Clock className="w-4 h-4 text-yellow-400 animate-spin" />
-                    <p className="text-sm text-yellow-300 font-medium">
-                      Resultado enviado. Aguardando confirmação do seu oponente.
-                    </p>
+                ) : activeMatch.status === 'PENDING_CONFIRMATION' ? (
+                  <div className="bg-amber-950/40 border border-amber-500/30 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="w-5 h-5 text-amber-400 flex-shrink-0 animate-pulse" />
+                      <div>
+                        <h4 className="text-sm font-bold text-amber-300">Aguardando Confirmação</h4>
+                        <p className="text-xs text-zinc-300">
+                          Um jogador reportou o resultado. O oponente precisa confirmar na arena.
+                        </p>
+                      </div>
+                    </div>
+                    {/* Confirm Button for Opponent */}
+                    <button
+                      onClick={() => setReportModalOpen(true)}
+                      className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs transition-colors shadow-md shadow-amber-600/20"
+                    >
+                      Confirmar ou Ajustar Resultado
+                    </button>
                   </div>
-                )}
-                {activeMatch.status === 'CONFIRMED' && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    <p className="text-sm text-emerald-300 font-bold">
-                      Resultado oficial confirmado!{' '}
-                      {activeMatch.isTie
-                        ? 'Empate'
-                        : activeMatch.confirmedWinnerId === activeMatch.player.userid
-                        ? 'Vitória sua!'
-                        : 'Vitória do Oponente'}
-                    </p>
+                ) : activeMatch.status === 'DISPUTED' ? (
+                  <div className="bg-red-950/50 border border-red-500/40 rounded-xl p-4 flex items-center space-x-3">
+                    <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 animate-bounce" />
+                    <div>
+                      <h4 className="text-sm font-bold text-red-300">Conflito de Reports!</h4>
+                      <p className="text-xs text-zinc-300">
+                        Os reports divergiram. Chame o <strong>Juiz do torneio</strong> na mesa {activeMatch.tableNumber}.
+                      </p>
+                    </div>
                   </div>
-                )}
-                {activeMatch.status === 'DISPUTED' && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 text-center flex items-center justify-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-red-400 animate-bounce" />
-                    <p className="text-sm text-red-300 font-bold">
-                      Divergência nos reports! Por favor, chame o Juiz da Coliseu à mesa {activeMatch.tableNumber}.
-                    </p>
-                  </div>
+                ) : (
+                  <button
+                    onClick={() => setReportModalOpen(true)}
+                    className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black rounded-xl text-sm transition-all shadow-lg shadow-red-600/30 active:scale-98 flex items-center justify-center space-x-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Reportar Resultado da Partida</span>
+                  </button>
                 )}
               </div>
-
-              {/* Action Button */}
-              {activeMatch.status !== 'CONFIRMED' && (
-                <button
-                  onClick={() => setReportModalOpen(true)}
-                  className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black rounded-xl text-base transition-all shadow-xl shadow-red-600/30 active:scale-98"
-                >
-                  Reportar Vencedor da Partida
-                </button>
-              )}
             </div>
           ) : (
             <div className="bg-[#121216] border border-zinc-800 rounded-2xl p-8 text-center">
-              <Clock className="w-10 h-10 text-red-500/50 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-white mb-1">Aguardando Pareamento</h3>
-              <p className="text-sm text-zinc-400">
-                Aguarde o organizador da Coliseu TCG gerar a próxima rodada no TOM. A tela atualizará automaticamente.
+              <Clock className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-white mb-1">Nenhuma mesa ativa no momento</h3>
+              <p className="text-xs text-zinc-400">
+                Aguarde o Juiz iniciar ou publicar a próxima rodada do torneio.
               </p>
             </div>
           )}
         </div>
       )}
 
-      {/* Tab 2: All Pairings */}
+      {/* Tab 2: Pairings */}
       {activeTab === 'pairings' && (
         <div className="space-y-3">
           <div className="relative">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar mesa ou nome do jogador..."
-              className="w-full pl-10 pr-4 py-2 bg-[#121216] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-600"
+              placeholder="Buscar por mesa, jogador ou POP ID..."
+              className="w-full pl-9 pr-4 py-2.5 bg-[#121216] border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-600"
             />
           </div>
 
           <div className="space-y-2">
-            {filteredPairings.map((p) => (
-              <div
-                key={p.matchId}
-                className="bg-[#121216] border border-zinc-800 rounded-xl p-3.5 flex items-center justify-between hover:border-red-950/60 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="w-10 h-10 rounded-lg bg-zinc-900 border border-red-600/40 flex items-center justify-center font-black text-red-400 text-sm shadow">
-                    {p.tableNumber}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {p.player1?.fullName || 'TBD'}{' '}
-                      <span className="text-zinc-500 font-normal">vs</span>{' '}
-                      {p.player2?.fullName || 'BYE'}
-                    </p>
-                    <p className="text-xs text-zinc-400">Rodada {p.roundNumber}</p>
+            {filteredPairings.length === 0 ? (
+              <p className="text-center py-8 text-xs text-zinc-500">Nenhum emparceiramento encontrado.</p>
+            ) : (
+              filteredPairings.map((p) => {
+                const isMyTable =
+                  popId && (p.player1?.userid === popId || p.player2?.userid === popId);
+                return (
+                  <div
+                    key={p.matchId}
+                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
+                      isMyTable
+                        ? 'bg-red-950/20 border-red-600/60 shadow-md shadow-red-950/30'
+                        : 'bg-[#121216] border-zinc-800'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center font-black text-red-500 text-xs">
+                        M{p.tableNumber}
+                      </span>
+                      <div>
+                        <div className="font-bold text-white flex items-center gap-1.5">
+                          <span>{p.player1?.fullName || 'BYE'}</span>
+                          <span className="text-zinc-500 font-normal">vs</span>
+                          <span>{p.player2?.fullName || 'BYE'}</span>
+                        </div>
+                        <div className="text-[10px] text-zinc-400 font-mono">
+                          {p.player1 ? `${p.player1.userid}` : '-'} &bull; {p.player2 ? `${p.player2.userid}` : '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      {p.status === 'CONFIRMED' ? (
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">
+                          Finalizada
+                        </span>
+                      ) : p.status === 'DISPUTED' ? (
+                        <span className="px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-[10px]">
+                          Conflito
+                        </span>
+                      ) : p.status === 'PENDING_CONFIRMATION' ? (
+                        <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-[10px]">
+                          Pendente
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 font-bold text-[10px]">
+                          Em Jogo
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  {p.status === 'CONFIRMED' ? (
-                    <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs px-2.5 py-1 rounded-full font-bold">
-                      Concluído
-                    </span>
-                  ) : p.status === 'DISPUTED' ? (
-                    <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-2.5 py-1 rounded-full font-bold">
-                      Disputa
-                    </span>
-                  ) : p.status === 'PENDING_CONFIRMATION' ? (
-                    <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs px-2.5 py-1 rounded-full font-bold">
-                      Pendente
-                    </span>
-                  ) : (
-                    <span className="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-full font-medium">
-                      Em duelo
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </div>
       )}
 
       {/* Tab 3: Standings */}
       {activeTab === 'standings' && (
-        <div className="bg-[#121216] border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
-          <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-red-500" />
-              Classificação Coliseu Arena
+        <div className="bg-[#121216] border border-zinc-800 rounded-2xl overflow-hidden shadow-md">
+          <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+              Classificação Geral
             </h3>
-            <span className="text-xs text-red-400/90 font-mono font-bold">{standings.length} Jogadores</span>
+            <span className="text-[10px] text-zinc-500 font-mono">{standings.length} jogadores</span>
           </div>
 
           <div className="divide-y divide-zinc-800">
@@ -412,7 +523,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
       {/* Report Result Modal */}
       {reportModalOpen && activeMatch && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#141419] border border-zinc-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-[#141419] border border-zinc-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl animate-scaleUp">
             <div className="flex justify-center mb-1">
               <ColiseuIcon size={44} />
             </div>

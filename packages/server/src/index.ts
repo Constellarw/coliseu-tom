@@ -8,15 +8,51 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseService } from './db/database.js';
 import { TournamentService } from './services/tournament.service.js';
 import { MatchReportService } from './services/match-report.service.js';
+import { AuthService } from './services/auth.service.js';
+import { ProfileService } from './services/profile.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+try {
+  process.loadEnvFile?.();
+} catch {
+  // Ignore if .env doesn't exist
+}
 
 export function buildServer(dbPath?: string) {
   const fastify = Fastify({ logger: true });
   const dbService = new DatabaseService(dbPath || './data/tournament.db');
   const tourneyService = new TournamentService(dbService);
   const reportService = new MatchReportService(dbService);
+  const authService = new AuthService(dbService);
+  const profileService = new ProfileService(dbService);
+
+  async function getAuthenticatedUser(req: any) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+    const token = authHeader.slice(7).trim();
+    return await authService.getUserByToken(token);
+  }
+
+  function decodeGoogleJwt(credential: string) {
+    try {
+      const parts = credential.split('.');
+      if (parts.length === 3) {
+        const payloadStr = Buffer.from(parts[1], 'base64').toString('utf-8');
+        const payload = JSON.parse(payloadStr);
+        return {
+          googleId: payload.sub,
+          email: payload.email,
+          name: payload.name || payload.email.split('@')[0],
+          picture: payload.picture
+        };
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
 
   // Active WebSocket connections mapped by tournamentId
   const wsClients = new Map<string, Set<any>>();
@@ -61,6 +97,127 @@ export function buildServer(dbPath?: string) {
     return reply.code(401).send({ error: 'Senha incorreta. Acesso exclusivo para Juízes e Organizadores.' });
   });
 
+  // Google OAuth Login
+  fastify.post('/api/auth/google', async (req, reply) => {
+    const body = (req.body as { credential?: string; googleId?: string; email?: string; name?: string; picture?: string }) || {};
+    let payload = { googleId: body.googleId, email: body.email, name: body.name, picture: body.picture };
+
+    if (body.credential) {
+      const decoded = decodeGoogleJwt(body.credential);
+      if (decoded) {
+        payload = { ...decoded, ...payload };
+      }
+    }
+
+    if (!payload.email || (!payload.googleId && !body.credential)) {
+      return reply.code(400).send({ error: 'Credenciais Google inválidas ou incompletas.' });
+    }
+
+    const googleId = payload.googleId || `g_${Date.now()}`;
+    const result = await authService.loginWithGoogle({
+      googleId,
+      email: payload.email,
+      name: payload.name || payload.email.split('@')[0],
+      picture: payload.picture
+    });
+
+    return result;
+  });
+
+  // Dev Mock Login (fast testing without Google Console setup)
+  fastify.post('/api/auth/dev-login', async (req, reply) => {
+    const body = (req.body as { email?: string; name?: string; popId?: string; picture?: string }) || {};
+    if (!body || !body.email) {
+      return reply.code(400).send({ error: 'Email é obrigatório para login Dev.' });
+    }
+
+    const result = await authService.devLogin({
+      email: body.email,
+      name: body.name || body.email.split('@')[0],
+      popId: body.popId,
+      picture: body.picture
+    });
+
+    return result;
+  });
+
+  // Current authenticated user info
+  fastify.get('/api/auth/me', async (req, reply) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return reply.code(401).send({ error: 'Não autenticado' });
+    }
+    return { user };
+  });
+
+  // Bind POP ID to user account (with anti-fraud verification)
+  fastify.post('/api/auth/bind-popid', async (req, reply) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return reply.code(401).send({ error: 'É necessário estar autenticado para vincular seu POP ID.' });
+    }
+
+    const body = (req.body as { popId?: string; birthDate?: string }) || {};
+    if (!body || !body.popId) {
+      return reply.code(400).send({ error: 'POP ID é obrigatório.' });
+    }
+
+    try {
+      const updatedUser = await authService.bindPopId(user.id, body.popId, body.birthDate);
+      return { success: true, user: updatedUser };
+    } catch (err: any) {
+      return reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // Logout
+  fastify.post('/api/auth/logout', async (req) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7).trim();
+      await authService.logout(token);
+    }
+    return { success: true };
+  });
+
+  // Player Profile: Overall stats (wins, ties, losses, win rate, best place)
+  fastify.get('/api/users/profile/stats', async (req, reply) => {
+    const { popId: queryPopId } = req.query as { popId?: string };
+    let popId = queryPopId;
+
+    if (!popId) {
+      const user = await getAuthenticatedUser(req);
+      if (user && user.pop_id) {
+        popId = user.pop_id;
+      }
+    }
+
+    if (!popId) {
+      return reply.code(400).send({ error: 'POP ID é obrigatório (via query ?popId= ou via usuário logado com POP ID vinculado)' });
+    }
+
+    return await profileService.getPlayerStats(popId);
+  });
+
+  // Player Profile: Tournament history breakdown
+  fastify.get('/api/users/profile/tournaments', async (req, reply) => {
+    const { popId: queryPopId } = req.query as { popId?: string };
+    let popId = queryPopId;
+
+    if (!popId) {
+      const user = await getAuthenticatedUser(req);
+      if (user && user.pop_id) {
+        popId = user.pop_id;
+      }
+    }
+
+    if (!popId) {
+      return reply.code(400).send({ error: 'POP ID é obrigatório (via query ?popId= ou via usuário logado com POP ID vinculado)' });
+    }
+
+    return await profileService.getTournamentHistory(popId);
+  });
+
   // WebSocket route for real-time live events
   fastify.register(async function (fastifyWs) {
     fastifyWs.get('/ws/tournament/:id', { websocket: true }, (connection: any, req) => {
@@ -92,7 +249,7 @@ export function buildServer(dbPath?: string) {
     }
 
     try {
-      const data = tourneyService.ingestTdf(id, rawXml);
+      const data = await tourneyService.ingestTdf(id, rawXml);
       broadcast(id, 'ROUND_UPDATED', { tournamentId: id, currentRound: data.pods[0]?.rounds?.length || 1 });
       return { success: true, tournament: data };
     } catch (err: any) {
@@ -109,7 +266,7 @@ export function buildServer(dbPath?: string) {
       return reply.code(400).send({ error: 'Query parameter popId is required' });
     }
 
-    const match = tourneyService.getPlayerActiveMatch(id, popId);
+    const match = await tourneyService.getPlayerActiveMatch(id, popId);
     if (!match) {
       return reply.code(404).send({ error: 'No active match found for this player in the current round' });
     }
@@ -122,14 +279,14 @@ export function buildServer(dbPath?: string) {
     const { id } = req.params as { id: string };
     const { round } = req.query as { round?: string };
     const roundNumber = round ? Number(round) : undefined;
-    return tourneyService.getRoundPairings(id, roundNumber);
+    return await tourneyService.getRoundPairings(id, roundNumber);
   });
 
   // Get tournament standings
   fastify.get('/api/tournaments/:id/standings', async (req) => {
     const { id } = req.params as { id: string };
     const { category } = req.query as { category?: string };
-    return tourneyService.getStandings(id, category);
+    return await tourneyService.getStandings(id, category);
   });
 
   // Submit player match report
@@ -141,8 +298,23 @@ export function buildServer(dbPath?: string) {
       return reply.code(400).send({ error: 'reportingPlayerId is required' });
     }
 
+    // Anti-fraud authentication verification
+    const user = await getAuthenticatedUser(req);
+    if (user) {
+      if (!user.pop_id) {
+        return reply.code(403).send({ error: 'Você precisa vincular seu POP ID oficial antes de enviar reports de partidas.' });
+      }
+      if (user.pop_id !== body.reportingPlayerId) {
+        return reply.code(403).send({
+          error: `Operação não autorizada: sua conta está vinculada ao POP ID ${user.pop_id}. Você não pode reportar partidas de outros jogadores.`
+        });
+      }
+    } else if (process.env.NODE_ENV !== 'test' && process.env.REQUIRE_AUTH === 'true') {
+      return reply.code(401).send({ error: 'É necessário fazer login com o Google e vincular seu POP ID para reportar a partida.' });
+    }
+
     try {
-      const result = reportService.reportResult({
+      const result = await reportService.reportResult({
         matchId,
         reportingPlayerId: body.reportingPlayerId,
         winnerId: body.winnerId || null,
@@ -162,7 +334,7 @@ export function buildServer(dbPath?: string) {
     const body = req.body as { winnerId?: string | null; isTie?: boolean };
 
     try {
-      const result = reportService.judgeOverride({
+      const result = await reportService.judgeOverride({
         matchId,
         winnerId: body.winnerId || null,
         isTie: Boolean(body.isTie)
@@ -178,10 +350,10 @@ export function buildServer(dbPath?: string) {
   // Get Judge report queue
   fastify.get('/api/tournaments/:id/reports/queue', async (req) => {
     const { id } = req.params as { id: string };
-    return reportService.getReportQueue(id);
+    return await reportService.getReportQueue(id);
   });
 
-  return { fastify, tourneyService, reportService, dbService };
+  return { fastify, tourneyService, reportService, dbService, authService, profileService };
 }
 
 export async function startServer() {

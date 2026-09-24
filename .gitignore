@@ -1,13 +1,41 @@
-node_modules
-dist
-.turbo
-.next
-out
-coverage
-*.log
-.env
-.env.local
+# Dependencies
+node_modules/
+
+# Production builds & caches
+dist/
+build/
+out/
+.next/
+.turbo/
+coverage/
 *.tsbuildinfo
+
+# Environment variables & secrets (CRUCIAL)
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+
+# Vercel & cloud deployment
+.vercel/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 data/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Binaries
 bin/
 *.exe
+
+# OS generated files
+.DS_Store
+Thumbs.db
+

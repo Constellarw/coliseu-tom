@@ -3,6 +3,10 @@ import { Header } from './components/Header';
 import { PlayerView } from './components/PlayerView';
 import { AdminView } from './components/AdminView';
 import { JudgeLoginModal } from './components/JudgeLoginModal';
+import { GoogleAuthModal } from './components/GoogleAuthModal';
+import { PopIdBindingModal } from './components/PopIdBindingModal';
+import { PlayerProfileModal } from './components/PlayerProfileModal';
+import { UserRecord } from './types/auth';
 
 export const App: React.FC = () => {
   const [tournamentId, setTournamentId] = useState<string>('tourney-1');
@@ -11,6 +15,17 @@ export const App: React.FC = () => {
     return sessionStorage.getItem('coliseu_judge_auth') === 'true';
   });
   const [isJudgeModalOpen, setIsJudgeModalOpen] = useState<boolean>(false);
+
+  // Authentication State
+  const [user, setUser] = useState<UserRecord | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(() => {
+    return localStorage.getItem('coliseu_auth_token');
+  });
+
+  // Modals
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+  const [isBindModalOpen, setIsBindModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const [popId, setPopIdState] = useState<string>(() => {
     return localStorage.getItem('poketom_popId') || '';
@@ -34,6 +49,35 @@ export const App: React.FC = () => {
     }
   };
 
+  // Restore authenticated user on mount
+  useEffect(() => {
+    if (!authToken) return;
+
+    const restoreUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          if (data.user.pop_id) {
+            setPopId(data.user.pop_id);
+          }
+        } else {
+          // Token expired or invalid
+          setAuthToken(null);
+          localStorage.removeItem('coliseu_auth_token');
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Failed to restore session:', err);
+      }
+    };
+
+    restoreUser();
+  }, [authToken]);
+
   const fetchAllData = useCallback(async () => {
     setIsSyncing(true);
     try {
@@ -55,8 +99,11 @@ export const App: React.FC = () => {
       }
 
       // 3. Fetch active match if player POP ID is set
-      if (popId) {
-        const matchRes = await fetch(`/api/tournaments/${tournamentId}/matches/active?popId=${encodeURIComponent(popId)}`);
+      const effectivePopId = user?.pop_id || popId;
+      if (effectivePopId) {
+        const matchRes = await fetch(
+          `/api/tournaments/${tournamentId}/matches/active?popId=${encodeURIComponent(effectivePopId)}`
+        );
         if (matchRes.ok) {
           const match = await matchRes.json();
           setActiveMatch(match);
@@ -78,7 +125,7 @@ export const App: React.FC = () => {
     } finally {
       setIsSyncing(false);
     }
-  }, [tournamentId, popId]);
+  }, [tournamentId, popId, user?.pop_id]);
 
   // Initial fetch and WebSocket connection
   useEffect(() => {
@@ -110,16 +157,29 @@ export const App: React.FC = () => {
       clearInterval(interval);
       if (socket) socket.close();
     };
-  }, [tournamentId, popId, fetchAllData]);
+  }, [tournamentId, popId, user?.pop_id, fetchAllData]);
 
-  // Handle player reporting
+  // Handle player reporting with anti-fraud auth token
   const handleReportMatch = async (winnerId: string | null, isTie: boolean) => {
     if (!activeMatch) return;
+    const effectivePopId = user?.pop_id || popId;
+    if (!effectivePopId) {
+      setIsGoogleModalOpen(true);
+      return;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
     const res = await fetch(`/api/tournaments/${tournamentId}/matches/${activeMatch.matchId}/report`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
-        reportingPlayerId: popId,
+        reportingPlayerId: effectivePopId,
         winnerId,
         isTie
       })
@@ -188,6 +248,50 @@ export const App: React.FC = () => {
     setViewMode('player');
   };
 
+  // Handle Google / Dev Login Success
+  const handleLoginSuccess = (loggedUser: UserRecord, token: string) => {
+    setUser(loggedUser);
+    setAuthToken(token);
+    localStorage.setItem('coliseu_auth_token', token);
+
+    if (loggedUser.pop_id) {
+      setPopId(loggedUser.pop_id);
+    } else {
+      // Prompt user to bind POP ID right after login
+      setIsBindModalOpen(true);
+    }
+    fetchAllData();
+  };
+
+  // Handle POP ID Binding Success
+  const handleBindSuccess = (updatedUser: UserRecord) => {
+    setUser(updatedUser);
+    if (updatedUser.pop_id) {
+      setPopId(updatedUser.pop_id);
+    }
+    setIsBindModalOpen(false);
+    fetchAllData();
+  };
+
+  // Handle User Logout
+  const handleUserLogout = async () => {
+    if (authToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+      } catch {
+        // Ignored
+      }
+    }
+    setUser(null);
+    setAuthToken(null);
+    localStorage.removeItem('coliseu_auth_token');
+    setPopId('');
+    setActiveMatch(null);
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 flex flex-col">
       <Header
@@ -205,18 +309,25 @@ export const App: React.FC = () => {
         onJudgeLogout={handleJudgeLogout}
         onRefresh={fetchAllData}
         isSyncing={isSyncing}
+        user={user}
+        onOpenGoogleLogin={() => setIsGoogleModalOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
       />
 
-      <main className="flex-1 p-4 md:p-6 pb-20">
+      <main className="flex-1 p-3 sm:p-4 md:p-6 pb-20">
         {viewMode === 'player' ? (
           <PlayerView
-            popId={popId}
+            popId={user?.pop_id || popId}
             setPopId={setPopId}
             activeMatch={activeMatch}
             pairings={pairings}
             standings={standings}
             onReportMatch={handleReportMatch}
             isLoading={isSyncing}
+            user={user}
+            onOpenGoogleLogin={() => setIsGoogleModalOpen(true)}
+            onOpenBindModal={() => setIsBindModalOpen(true)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
           />
         ) : isJudgeAuthenticated ? (
           <AdminView
@@ -242,6 +353,38 @@ export const App: React.FC = () => {
         )}
       </main>
 
+      {/* Google / Quick Login Modal */}
+      <GoogleAuthModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
+
+      {/* POP ID Binding & Anti-Fraud Modal */}
+      {user && authToken && (
+        <PopIdBindingModal
+          isOpen={isBindModalOpen}
+          onClose={() => setIsBindModalOpen(false)}
+          user={user}
+          token={authToken}
+          onSuccess={handleBindSuccess}
+          canDismiss={true}
+        />
+      )}
+
+      {/* Player Profile & Tournament History Modal */}
+      {user && authToken && (
+        <PlayerProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          user={user}
+          token={authToken}
+          onLogout={handleUserLogout}
+          onOpenBindModal={() => setIsBindModalOpen(true)}
+        />
+      )}
+
+      {/* Judge Login Modal */}
       <JudgeLoginModal
         isOpen={isJudgeModalOpen}
         onClose={() => setIsJudgeModalOpen(false)}

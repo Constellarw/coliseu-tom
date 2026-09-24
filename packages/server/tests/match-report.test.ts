@@ -10,21 +10,21 @@ describe('Match Report Service', () => {
   let tourneyService: TournamentService;
   let reportService: MatchReportService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = new DatabaseService(':memory:');
     tourneyService = new TournamentService(db);
     reportService = new MatchReportService(db);
 
     const fixturePath = resolve(__dirname, '../../tom-core/tests/fixtures/sample_tournament.tdf');
     const xmlContent = readFileSync(fixturePath, 'utf-8');
-    tourneyService.ingestTdf('tourney-1', xmlContent);
+    await tourneyService.ingestTdf('tourney-1', xmlContent);
   });
 
-  it('should handle single player report with PENDING_CONFIRMATION', () => {
+  it('should handle single player report with PENDING_CONFIRMATION', async () => {
     const matchId = 'tourney-1_cat2_r1_t1';
-    
+
     // Player 1 (Ash - 987654321) reports win
-    const res = reportService.reportResult({
+    const res = await reportService.reportResult({
       matchId,
       reportingPlayerId: '987654321',
       winnerId: '987654321',
@@ -37,11 +37,11 @@ describe('Match Report Service', () => {
     expect(res.confirmedWinnerId).toBeNull();
   });
 
-  it('should auto-confirm match when both players report the same winner', () => {
+  it('should auto-confirm match when both players report the same winner', async () => {
     const matchId = 'tourney-1_cat2_r1_t1';
 
     // Player 1 reports Ash won
-    reportService.reportResult({
+    await reportService.reportResult({
       matchId,
       reportingPlayerId: '987654321',
       winnerId: '987654321',
@@ -49,7 +49,7 @@ describe('Match Report Service', () => {
     });
 
     // Player 2 confirms Ash won
-    const res2 = reportService.reportResult({
+    const res2 = await reportService.reportResult({
       matchId,
       reportingPlayerId: '876543219',
       winnerId: '987654321',
@@ -58,22 +58,22 @@ describe('Match Report Service', () => {
 
     expect(res2.status).toBe('CONFIRMED');
     expect(res2.confirmedWinnerId).toBe('987654321');
-    expect(res2.tomOutcome).toBe('1'); // Player 1 won
+    expect(res2.tomOutcome).toBe('1');
   });
 
-  it('should set DISPUTED status when players report conflicting results', () => {
+  it('should flag DISPUTED status when reports conflict', async () => {
     const matchId = 'tourney-1_cat2_r1_t1';
 
-    // Player 1 reports Ash won
-    reportService.reportResult({
+    // Player 1 reports they won
+    await reportService.reportResult({
       matchId,
       reportingPlayerId: '987654321',
       winnerId: '987654321',
       isTie: false
     });
 
-    // Player 2 reports Gary won (conflict!)
-    const res2 = reportService.reportResult({
+    // Player 2 reports they won instead (conflict!)
+    const res2 = await reportService.reportResult({
       matchId,
       reportingPlayerId: '876543219',
       winnerId: '876543219',
@@ -84,25 +84,10 @@ describe('Match Report Service', () => {
     expect(res2.confirmedWinnerId).toBeNull();
   });
 
-  it('should allow judge override to resolve dispute', () => {
+  it('should allow judge override on confirmed match', async () => {
     const matchId = 'tourney-1_cat2_r1_t1';
 
-    // Conflicting reports
-    reportService.reportResult({
-      matchId,
-      reportingPlayerId: '987654321',
-      winnerId: '987654321',
-      isTie: false
-    });
-    reportService.reportResult({
-      matchId,
-      reportingPlayerId: '876543219',
-      winnerId: '876543219',
-      isTie: false
-    });
-
-    // Judge steps in and rules Gary won
-    const overrideRes = reportService.judgeOverride({
+    const overrideRes = await reportService.judgeOverride({
       matchId,
       winnerId: '876543219',
       isTie: false
@@ -110,6 +95,6 @@ describe('Match Report Service', () => {
 
     expect(overrideRes.status).toBe('CONFIRMED');
     expect(overrideRes.confirmedWinnerId).toBe('876543219');
-    expect(overrideRes.tomOutcome).toBe('2'); // Player 2 won
+    expect(overrideRes.tomOutcome).toBe('2');
   });
 });

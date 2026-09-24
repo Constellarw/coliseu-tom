@@ -36,13 +36,7 @@ export const JudgeLoginModal: React.FC<JudgeLoginModalProps> = ({ isOpen, onClos
         setError(body.error || 'Senha incorreta. Acesso exclusivo para Juízes.');
       }
     } catch {
-      // Fallback local check if offline
-      if (password.trim() === 'coliseu123') {
-        setPassword('');
-        onSuccess();
-      } else {
-        setError('Senha incorreta. Acesso exclusivo para Juízes.');
-      }
+      setError('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
     } finally {
       setLoading(false);
     }

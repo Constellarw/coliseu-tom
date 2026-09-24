@@ -33,9 +33,8 @@ export interface PairingView {
 export class TournamentService {
   constructor(private dbService: DatabaseService) {}
 
-  public ingestTdf(tournamentId: string, rawXml: string): TournamentData {
+  public async ingestTdf(tournamentId: string, rawXml: string): Promise<TournamentData> {
     const data = parseTdf(rawXml);
-    const db = this.dbService.db;
     const now = new Date().toISOString();
 
     // Calculate max round number
@@ -49,55 +48,57 @@ export class TournamentService {
     }
 
     // Upsert Tournament
-    db.prepare(`
-      INSERT INTO tournaments (id, name, city, state, country, organizer_name, organizer_pop_id, round_time, start_date, current_round, raw_tdf, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        name = excluded.name,
-        city = excluded.city,
-        state = excluded.state,
-        country = excluded.country,
-        organizer_name = excluded.organizer_name,
-        organizer_pop_id = excluded.organizer_pop_id,
-        round_time = excluded.round_time,
-        start_date = excluded.start_date,
-        current_round = excluded.current_round,
-        raw_tdf = excluded.raw_tdf,
-        updated_at = excluded.updated_at
-    `).run(
-      tournamentId,
-      data.data.name,
-      data.data.city || '',
-      data.data.state || '',
-      data.data.country || '',
-      data.data.organizerName || '',
-      data.data.organizerPopId || '',
-      data.data.roundTimeMinutes || 30,
-      data.data.startDate || '',
-      maxRound,
-      rawXml,
-      now
+    await this.dbService.run(
+      `INSERT INTO tournaments (id, name, city, state, country, organizer_name, organizer_pop_id, round_time, start_date, current_round, raw_tdf, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name,
+         city = excluded.city,
+         state = excluded.state,
+         country = excluded.country,
+         organizer_name = excluded.organizer_name,
+         organizer_pop_id = excluded.organizer_pop_id,
+         round_time = excluded.round_time,
+         start_date = excluded.start_date,
+         current_round = excluded.current_round,
+         raw_tdf = excluded.raw_tdf,
+         updated_at = excluded.updated_at`,
+      [
+        tournamentId,
+        data.data.name,
+        data.data.city || '',
+        data.data.state || '',
+        data.data.country || '',
+        data.data.organizerName || '',
+        data.data.organizerPopId || '',
+        data.data.roundTimeMinutes || 30,
+        data.data.startDate || '',
+        maxRound,
+        rawXml,
+        now
+      ]
     );
 
     // Upsert Players
-    for (const p of Object.values(data.players)) {
+    for (const p of Object.values(data.players) as any[]) {
       const playerId = `${tournamentId}_${p.userid}`;
-      db.prepare(`
-        INSERT INTO players (id, tournament_id, user_id, first_name, last_name, full_name, birth_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          first_name = excluded.first_name,
-          last_name = excluded.last_name,
-          full_name = excluded.full_name,
-          birth_date = excluded.birth_date
-      `).run(
-        playerId,
-        tournamentId,
-        p.userid,
-        p.firstName,
-        p.lastName,
-        p.fullName,
-        p.birthDate || ''
+      await this.dbService.run(
+        `INSERT INTO players (id, tournament_id, user_id, first_name, last_name, full_name, birth_date)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           first_name = excluded.first_name,
+           last_name = excluded.last_name,
+           full_name = excluded.full_name,
+           birth_date = excluded.birth_date`,
+        [
+          playerId,
+          tournamentId,
+          p.userid,
+          p.firstName,
+          p.lastName,
+          p.fullName,
+          p.birthDate || ''
+        ]
       );
     }
 
@@ -106,76 +107,98 @@ export class TournamentService {
       for (const r of pod.rounds) {
         for (const m of r.matches) {
           const matchId = `${tournamentId}_cat${pod.category}_r${r.number}_t${m.tableNumber}`;
-          
+
           // Existing match preservation for report status
-          const existing = db.prepare('SELECT status, p1_reported_winner, p2_reported_winner, confirmed_winner_id, is_tie FROM matches WHERE id = ?').get(matchId) as any;
+          const existing = await this.dbService.queryOne<any>(
+            'SELECT status, p1_reported_winner, p2_reported_winner, confirmed_winner_id, is_tie FROM matches WHERE id = ?',
+            [matchId]
+          );
 
           const status = existing?.status || (m.outcome !== '0' ? 'CONFIRMED' : 'IN_PROGRESS');
           const p1Report = existing?.p1_reported_winner || null;
           const p2Report = existing?.p2_reported_winner || null;
-          const confirmedWinner = existing?.confirmed_winner_id || (m.outcome === '1' ? m.player1Id : m.outcome === '2' ? m.player2Id : null);
+          const confirmedWinner =
+            existing?.confirmed_winner_id ||
+            (m.outcome === '1' ? m.player1Id : m.outcome === '2' ? m.player2Id : null);
           const isTie = existing?.is_tie ?? (m.outcome === '3' ? 1 : 0);
 
-          db.prepare(`
-            INSERT INTO matches (id, tournament_id, pod_category, round_number, table_number, player1_id, player2_id, tom_outcome, status, p1_reported_winner, p2_reported_winner, confirmed_winner_id, is_tie, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-              tom_outcome = excluded.tom_outcome,
-              status = CASE WHEN matches.status = 'CONFIRMED' THEN matches.status ELSE excluded.status END,
-              updated_at = excluded.updated_at
-          `).run(
-            matchId,
-            tournamentId,
-            pod.category,
-            r.number,
-            m.tableNumber,
-            m.player1Id,
-            m.player2Id,
-            m.outcome,
-            status,
-            p1Report,
-            p2Report,
-            confirmedWinner,
-            isTie,
-            now
+          await this.dbService.run(
+            `INSERT INTO matches (id, tournament_id, pod_category, round_number, table_number, player1_id, player2_id, tom_outcome, status, p1_reported_winner, p2_reported_winner, confirmed_winner_id, is_tie, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET
+               tom_outcome = excluded.tom_outcome,
+               status = CASE WHEN matches.status = 'CONFIRMED' THEN matches.status ELSE excluded.status END,
+               updated_at = excluded.updated_at`,
+            [
+              matchId,
+              tournamentId,
+              pod.category,
+              r.number,
+              m.tableNumber,
+              m.player1Id,
+              m.player2Id,
+              m.outcome,
+              status,
+              p1Report,
+              p2Report,
+              confirmedWinner,
+              isTie,
+              now
+            ]
           );
         }
       }
     }
 
     // Upsert Standings
-    db.prepare('DELETE FROM standings WHERE tournament_id = ?').run(tournamentId);
+    await this.dbService.run('DELETE FROM standings WHERE tournament_id = ?', [tournamentId]);
     for (const sp of data.standings) {
       for (const rank of sp.rankings) {
         const standingId = `${tournamentId}_${sp.category}_p${rank.place}`;
-        db.prepare(`
-          INSERT INTO standings (id, tournament_id, pod_category, player_id, place)
-          VALUES (?, ?, ?, ?, ?)
-        `).run(standingId, tournamentId, sp.category, rank.playerId, rank.place);
+        await this.dbService.run(
+          `INSERT INTO standings (id, tournament_id, pod_category, player_id, place)
+           VALUES (?, ?, ?, ?, ?)`,
+          [standingId, tournamentId, sp.category, rank.playerId, rank.place]
+        );
       }
     }
 
     return data;
   }
 
-  public getPlayerActiveMatch(tournamentId: string, popId: string): PlayerActiveMatchView | null {
-    const tourney = this.dbService.db.prepare('SELECT current_round FROM tournaments WHERE id = ?').get(tournamentId) as any;
+  public async getPlayerActiveMatch(
+    tournamentId: string,
+    popId: string
+  ): Promise<PlayerActiveMatchView | null> {
+    const tourney = await this.dbService.queryOne<any>(
+      'SELECT current_round FROM tournaments WHERE id = ?',
+      [tournamentId]
+    );
     if (!tourney) return null;
 
     const roundNumber = tourney.current_round;
 
-    const match = this.dbService.db.prepare(`
-      SELECT * FROM matches
-      WHERE tournament_id = ? AND round_number = ? AND (player1_id = ? OR player2_id = ?)
-    `).get(tournamentId, roundNumber, popId, popId) as any;
+    const match = await this.dbService.queryOne<any>(
+      `SELECT * FROM matches
+       WHERE tournament_id = ? AND round_number = ? AND (player1_id = ? OR player2_id = ?)`,
+      [tournamentId, roundNumber, popId, popId]
+    );
 
     if (!match) return null;
 
     const isPlayer1 = match.player1_id === popId;
     const opponentId = isPlayer1 ? match.player2_id : match.player1_id;
 
-    const playerRow = this.dbService.db.prepare('SELECT * FROM players WHERE tournament_id = ? AND user_id = ?').get(tournamentId, popId) as any;
-    const opponentRow = opponentId ? this.dbService.db.prepare('SELECT * FROM players WHERE tournament_id = ? AND user_id = ?').get(tournamentId, opponentId) as any : null;
+    const playerRow = await this.dbService.queryOne<any>(
+      'SELECT * FROM players WHERE tournament_id = ? AND user_id = ?',
+      [tournamentId, popId]
+    );
+    const opponentRow = opponentId
+      ? await this.dbService.queryOne<any>(
+          'SELECT * FROM players WHERE tournament_id = ? AND user_id = ?',
+          [tournamentId, opponentId]
+        )
+      : null;
 
     return {
       matchId: match.id,
@@ -189,12 +212,14 @@ export class TournamentService {
         lastName: playerRow?.last_name || '',
         fullName: playerRow?.full_name || popId
       },
-      opponent: opponentRow ? {
-        userid: opponentRow.user_id,
-        firstName: opponentRow.first_name || '',
-        lastName: opponentRow.last_name || '',
-        fullName: opponentRow.full_name || opponentId
-      } : null,
+      opponent: opponentRow
+        ? {
+            userid: opponentRow.user_id,
+            firstName: opponentRow.first_name || '',
+            lastName: opponentRow.last_name || '',
+            fullName: opponentRow.full_name || opponentId
+          }
+        : null,
       status: match.status,
       p1ReportedWinner: match.p1_reported_winner,
       p2ReportedWinner: match.p2_reported_winner,
@@ -204,7 +229,10 @@ export class TournamentService {
     };
   }
 
-  public getStandings(tournamentId: string, category?: string): Array<{ place: number; player: TomPlayer; category: string }> {
+  public async getStandings(
+    tournamentId: string,
+    category?: string
+  ): Promise<Array<{ place: number; player: TomPlayer; category: string }>> {
     let sql = `
       SELECT s.place, s.pod_category, p.user_id, p.first_name, p.last_name, p.full_name
       FROM standings s
@@ -220,9 +248,9 @@ export class TournamentService {
 
     sql += ' ORDER BY s.place ASC';
 
-    const rows = this.dbService.db.prepare(sql).all(...params) as any[];
+    const rows = await this.dbService.queryAll<any>(sql, params);
 
-    return rows.map(r => ({
+    return rows.map((r) => ({
       place: r.place,
       category: r.pod_category,
       player: {
@@ -234,46 +262,64 @@ export class TournamentService {
     }));
   }
 
-  public getRoundPairings(tournamentId: string, roundNumber?: number): PairingView[] {
+  public async getRoundPairings(tournamentId: string, roundNumber?: number): Promise<PairingView[]> {
     let targetRound = roundNumber;
     if (!targetRound) {
-      const tourney = this.dbService.db.prepare('SELECT current_round FROM tournaments WHERE id = ?').get(tournamentId) as any;
+      const tourney = await this.dbService.queryOne<any>(
+        'SELECT current_round FROM tournaments WHERE id = ?',
+        [tournamentId]
+      );
       targetRound = tourney?.current_round || 1;
     }
     const finalRound = targetRound || 1;
 
-    const rows = this.dbService.db.prepare(`
-      SELECT * FROM matches
-      WHERE tournament_id = ? AND round_number = ?
-      ORDER BY table_number ASC
-    `).all(tournamentId, finalRound) as any[];
+    const rows = await this.dbService.queryAll<any>(
+      `SELECT * FROM matches
+       WHERE tournament_id = ? AND round_number = ?
+       ORDER BY table_number ASC`,
+      [tournamentId, finalRound]
+    );
 
-    return rows.map(m => {
-      const p1 = this.dbService.db.prepare('SELECT * FROM players WHERE tournament_id = ? AND user_id = ?').get(tournamentId, m.player1_id) as any;
-      const p2 = this.dbService.db.prepare('SELECT * FROM players WHERE tournament_id = ? AND user_id = ?').get(tournamentId, m.player2_id) as any;
+    const pairings: PairingView[] = [];
 
-      return {
+    for (const m of rows) {
+      const p1 = await this.dbService.queryOne<any>(
+        'SELECT * FROM players WHERE tournament_id = ? AND user_id = ?',
+        [tournamentId, m.player1_id]
+      );
+      const p2 = await this.dbService.queryOne<any>(
+        'SELECT * FROM players WHERE tournament_id = ? AND user_id = ?',
+        [tournamentId, m.player2_id]
+      );
+
+      pairings.push({
         matchId: m.id,
         roundNumber: m.round_number,
         tableNumber: m.table_number,
         category: m.pod_category,
-        player1: p1 ? {
-          userid: p1.user_id,
-          firstName: p1.first_name,
-          lastName: p1.last_name,
-          fullName: p1.full_name
-        } : null,
-        player2: p2 ? {
-          userid: p2.user_id,
-          firstName: p2.first_name,
-          lastName: p2.last_name,
-          fullName: p2.full_name
-        } : null,
+        player1: p1
+          ? {
+              userid: p1.user_id,
+              firstName: p1.first_name,
+              lastName: p1.last_name,
+              fullName: p1.full_name
+            }
+          : null,
+        player2: p2
+          ? {
+              userid: p2.user_id,
+              firstName: p2.first_name,
+              lastName: p2.last_name,
+              fullName: p2.full_name
+            }
+          : null,
         status: m.status,
         confirmedWinnerId: m.confirmed_winner_id,
         isTie: Boolean(m.is_tie),
         tomOutcome: m.tom_outcome
-      };
-    });
+      });
+    }
+
+    return pairings;
   }
 }

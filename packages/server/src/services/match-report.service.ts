@@ -26,11 +26,10 @@ export interface MatchReportResult {
 export class MatchReportService {
   constructor(private dbService: DatabaseService) {}
 
-  public reportResult(params: ReportResultParams): MatchReportResult {
+  public async reportResult(params: ReportResultParams): Promise<MatchReportResult> {
     const { matchId, reportingPlayerId, winnerId, isTie } = params;
-    const db = this.dbService.db;
 
-    const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId) as any;
+    const match = await this.dbService.queryOne<any>('SELECT * FROM matches WHERE id = ?', [matchId]);
     if (!match) {
       throw new Error(`Match not found: ${matchId}`);
     }
@@ -75,25 +74,26 @@ export class MatchReportService {
     }
 
     const now = new Date().toISOString();
-    db.prepare(`
-      UPDATE matches
-      SET status = ?,
-          p1_reported_winner = ?,
-          p2_reported_winner = ?,
-          confirmed_winner_id = ?,
-          is_tie = ?,
-          tom_outcome = ?,
-          updated_at = ?
-      WHERE id = ?
-    `).run(
-      status,
-      p1Report,
-      p2Report,
-      confirmedWinnerId,
-      finalIsTie,
-      tomOutcome,
-      now,
-      matchId
+    await this.dbService.run(
+      `UPDATE matches
+       SET status = ?,
+           p1_reported_winner = ?,
+           p2_reported_winner = ?,
+           confirmed_winner_id = ?,
+           is_tie = ?,
+           tom_outcome = ?,
+           updated_at = ?
+       WHERE id = ?`,
+      [
+        status,
+        p1Report,
+        p2Report,
+        confirmedWinnerId,
+        finalIsTie,
+        tomOutcome,
+        now,
+        matchId
+      ]
     );
 
     return {
@@ -107,11 +107,10 @@ export class MatchReportService {
     };
   }
 
-  public judgeOverride(params: JudgeOverrideParams): MatchReportResult {
+  public async judgeOverride(params: JudgeOverrideParams): Promise<MatchReportResult> {
     const { matchId, winnerId, isTie } = params;
-    const db = this.dbService.db;
 
-    const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId) as any;
+    const match = await this.dbService.queryOne<any>('SELECT * FROM matches WHERE id = ?', [matchId]);
     if (!match) {
       throw new Error(`Match not found: ${matchId}`);
     }
@@ -128,21 +127,22 @@ export class MatchReportService {
     }
 
     const now = new Date().toISOString();
-    db.prepare(`
-      UPDATE matches
-      SET status = ?,
-          confirmed_winner_id = ?,
-          is_tie = ?,
-          tom_outcome = ?,
-          updated_at = ?
-      WHERE id = ?
-    `).run(
-      status,
-      confirmedWinnerId,
-      finalIsTie,
-      tomOutcome,
-      now,
-      matchId
+    await this.dbService.run(
+      `UPDATE matches
+       SET status = ?,
+           confirmed_winner_id = ?,
+           is_tie = ?,
+           tom_outcome = ?,
+           updated_at = ?
+       WHERE id = ?`,
+      [
+        status,
+        confirmedWinnerId,
+        finalIsTie,
+        tomOutcome,
+        now,
+        matchId
+      ]
     );
 
     return {
@@ -156,18 +156,18 @@ export class MatchReportService {
     };
   }
 
-  public getReportQueue(tournamentId: string) {
-    const db = this.dbService.db;
-    return db.prepare(`
-      SELECT m.*,
-             p1.full_name as p1_name,
-             p2.full_name as p2_name
-      FROM matches m
-      LEFT JOIN players p1 ON m.tournament_id = p1.tournament_id AND m.player1_id = p1.user_id
-      LEFT JOIN players p2 ON m.tournament_id = p2.tournament_id AND m.player2_id = p2.user_id
-      WHERE m.tournament_id = ?
-        AND m.status IN ('PENDING_CONFIRMATION', 'CONFIRMED', 'DISPUTED')
-      ORDER BY m.round_number DESC, m.table_number ASC
-    `).all(tournamentId);
+  public async getReportQueue(tournamentId: string): Promise<any[]> {
+    return this.dbService.queryAll(
+      `SELECT m.*,
+              p1.full_name as p1_name,
+              p2.full_name as p2_name
+       FROM matches m
+       LEFT JOIN players p1 ON m.tournament_id = p1.tournament_id AND m.player1_id = p1.user_id
+       LEFT JOIN players p2 ON m.tournament_id = p2.tournament_id AND m.player2_id = p2.user_id
+       WHERE m.tournament_id = ?
+         AND m.status IN ('PENDING_CONFIRMATION', 'CONFIRMED', 'DISPUTED')
+       ORDER BY m.round_number DESC, m.table_number ASC`,
+      [tournamentId]
+    );
   }
 }

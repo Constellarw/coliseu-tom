@@ -2,12 +2,13 @@
   "name": "tom-external-platform",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Pokemon TCG Tournament Operations Manager (TOM) External Platform and Sync Suite",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w packages/tom-core && npm run build --workspaces --if-present",
     "start": "node packages/server/dist/index.js",
     "dev": "npm run dev -w packages/web",
     "tunnel": "node tunnel.mjs",

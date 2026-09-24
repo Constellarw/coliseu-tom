@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tournament type="3" stage="5" version="1.80" gametype="TRADING_CARD_GAME" mode="TCG1DAY">
+	<data>
+		<name>Coliseu Arena - Torneio Semanal Pokémon TCG</name>
+		<id>COLISEU-2026-09</id>
+		<city>Mogi Guaçu</city>
+		<state>SP</state>
+		<country>Brazil</country>
+		<roundtime>30</roundtime>
+		<finalsroundtime>75</finalsroundtime>
+		<organizer popid="109922" name="Coliseu TCG Arena"/>
+		<startdate>23/09/2026</startdate>
+		<lessswiss>false</lessswiss>
+		<autotablenumber>true</autotablenumber>
+		<overflowtablestart>17</overflowtablestart>
+	</data>
+	<timeelapsed>45</timeelapsed>
+	<players>
+		<player userid="100101">
+			<firstname>Wislan</firstname>
+			<lastname>Santos</lastname>
+			<birthdate>15/04/1997</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="100102">
+			<firstname>Gabriel</firstname>
+			<lastname>Oliveira</lastname>
+			<birthdate>22/08/1998</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="100103">
+			<firstname>Lucas</firstname>
+			<lastname>Ferreira</lastname>
+			<birthdate>10/11/1999</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="100104">
+			<firstname>Matheus</firstname>
+			<lastname>Silva</lastname>
+			<birthdate>05/01/1996</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="100105">
+			<firstname>Felipe</firstname>
+			<lastname>Rodrigues</lastname>
+			<birthdate>30/03/2000</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="100106">
+			<firstname>Bruno</firstname>
+			<lastname>Carvalho</lastname>
+			<birthdate>18/07/1995</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="100107">
+			<firstname>Rafael</firstname>
+			<lastname>Costa</lastname>
+			<birthdate>12/12/1998</birthdate>
+			<starter>true</starter>
+		</player>
+		<player userid="100108">
+			<firstname>Thiago</firstname>
+			<lastname>Almeida</lastname>
+			<birthdate>25/09/1997</birthdate>
+			<starter>true</starter>
+		</player>
+	</players>
+	<pods>
+		<pod category="2" stage="0">
+			<poddata>
+				<startingtable>1</startingtable>
+				<playoff3rd4th>false</playoff3rd4th>
+				<subgroupcount>1</subgroupcount>
+				<additionalrounds>0</additionalrounds>
+			</poddata>
+			<rounds>
+				<round number="1" type="3" stage="6">
+					<timeleft>1500</timeleft>
+					<pairtime>23/09/2026 14:00:00</pairtime>
+					<starttime>23/09/2026 14:05:00</starttime>
+					<matches>
+						<match outcome="0">
+							<player1 userid="100101"/>
+							<player2 userid="100102"/>
+							<tablenumber>1</tablenumber>
+						</match>
+						<match outcome="0">
+							<player1 userid="100103"/>
+							<player2 userid="100104"/>
+							<tablenumber>2</tablenumber>
+						</match>
+						<match outcome="0">
+							<player1 userid="100105"/>
+							<player2 userid="100106"/>
+							<tablenumber>3</tablenumber>
+						</match>
+						<match outcome="0">
+							<player1 userid="100107"/>
+							<player2 userid="100108"/>
+							<tablenumber>4</tablenumber>
+						</match>
+					</matches>
+				</round>
+			</rounds>
+		</pod>
+	</pods>
+	<standings>
+		<pod category="2" type="preliminary">
+			<player id="100101" place="1" />
+			<player id="100102" place="2" />
+			<player id="100103" place="3" />
+			<player id="100104" place="4" />
+			<player id="100105" place="5" />
+			<player id="100106" place="6" />
+			<player id="100107" place="7" />
+			<player id="100108" place="8" />
+		</pod>
+	</standings>
+</tournament>

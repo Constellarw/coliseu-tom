@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "npm run --prefix ../tom-core build && npm run --prefix ../web build && tsc && node scripts/copy-dist.mjs",
+    "build": "npm run --prefix ../tom-core build && tsc",
     "start": "node dist/index.js",
     "dev": "node --watch src/index.ts",
     "test": "vitest run"

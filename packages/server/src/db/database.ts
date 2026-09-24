@@ -1,11 +1,17 @@
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
 import { createClient, type Client } from '@libsql/client/web';
 
-const require = createRequire(import.meta.url);
-const { DatabaseSync } = require('node:sqlite');
+export type DatabaseSyncType = any;
+
+let DatabaseSyncClass: any = null;
+try {
+  const req = createRequire(import.meta.url);
+  DatabaseSyncClass = req('node:sqlite')?.DatabaseSync;
+} catch {
+  // node:sqlite is available in Node 22.5+. In serverless / Vercel, Turso is used instead.
+}
 
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS tournaments (
@@ -113,7 +119,10 @@ export class DatabaseService {
           // Directory already exists or path is in cwd
         }
       }
-      this.localDb = new DatabaseSync(filePath);
+      if (!DatabaseSyncClass) {
+        throw new Error('Local SQLite requer Node.js 22.5+ ou defina TURSO_DATABASE_URL para usar banco remoto.');
+      }
+      this.localDb = new DatabaseSyncClass(filePath);
       this.localDb!.exec(SCHEMA_SQL);
     }
   }

@@ -36,12 +36,16 @@ export function buildServer(dbPath) {
         try {
             const parts = credential.split('.');
             if (parts.length === 3) {
-                const payloadStr = Buffer.from(parts[1], 'base64').toString('utf-8');
+                let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                while (base64.length % 4) {
+                    base64 += '=';
+                }
+                const payloadStr = Buffer.from(base64, 'base64').toString('utf-8');
                 const payload = JSON.parse(payloadStr);
                 return {
                     googleId: payload.sub,
                     email: payload.email,
-                    name: payload.name || payload.email.split('@')[0],
+                    name: payload.name || (payload.email ? payload.email.split('@')[0] : 'Jogador'),
                     picture: payload.picture
                 };
             }
@@ -122,7 +126,12 @@ export function buildServer(dbPath) {
         if (body.credential) {
             const decoded = decodeGoogleJwt(body.credential);
             if (decoded) {
-                payload = { ...decoded, ...payload };
+                payload = {
+                    googleId: decoded.googleId || payload.googleId,
+                    email: decoded.email || payload.email,
+                    name: decoded.name || payload.name,
+                    picture: decoded.picture || payload.picture
+                };
             }
         }
         if (!payload.email || (!payload.googleId && !body.credential)) {
@@ -137,8 +146,11 @@ export function buildServer(dbPath) {
         });
         return result;
     });
-    // Dev Mock Login (fast testing without Google Console setup)
+    // Dev Mock Login (only for development/testing environments)
     fastify.post('/api/auth/dev-login', async (req, reply) => {
+        if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_DEV_LOGIN) {
+            return reply.code(403).send({ error: 'Dev login desabilitado em ambiente de produção.' });
+        }
         const body = req.body || {};
         if (!body || !body.email) {
             return reply.code(400).send({ error: 'Email é obrigatório para login Dev.' });

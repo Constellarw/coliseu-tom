@@ -86,6 +86,7 @@ export function buildServer(dbPath?: string) {
 
   // Health check
   fastify.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+  fastify.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 
   // Judge authentication
   fastify.post('/api/auth/judge', async (req, reply) => {

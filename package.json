@@ -8,7 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @tom/core && npm run build -w @tom/server && npm run build -w @tom/web && node -e \"require('fs').cpSync('packages/web/dist','dist',{recursive:true})\"",
+    "build": "npm run build -w @tom/core && npm run build -w @tom/server && npm run build -w @tom/web && node scripts/postbuild.mjs",
+    "vercel-build": "npm run build",
     "start": "node packages/server/dist/index.js",
     "dev": "npm run dev -w packages/web",
     "tunnel": "node tunnel.mjs",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "typescript": "^5.5.4",
     "untun": "^0.2.2",
+    "vite": "^5.4.21",
     "vitest": "^2.0.5"
   }
 }

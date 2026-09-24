@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
@@ -20,8 +20,17 @@ try {
   // Ignore if .env doesn't exist
 }
 
-export function buildServer(dbPath?: string) {
-  const fastify = Fastify({ logger: true });
+export interface ServerInstance {
+  fastify: FastifyInstance;
+  tourneyService: TournamentService;
+  reportService: MatchReportService;
+  dbService: DatabaseService;
+  authService: AuthService;
+  profileService: ProfileService;
+}
+
+export function buildServer(dbPath?: string): ServerInstance {
+  const fastify: FastifyInstance = Fastify({ logger: true });
   const dbService = new DatabaseService(dbPath || './data/tournament.db');
   const tourneyService = new TournamentService(dbService);
   const reportService = new MatchReportService(dbService);
@@ -374,7 +383,7 @@ export function buildServer(dbPath?: string) {
   return { fastify, tourneyService, reportService, dbService, authService, profileService };
 }
 
-export async function startServer() {
+export async function startServer(): Promise<FastifyInstance> {
   const { fastify } = buildServer();
   const PORT = Number(process.env.PORT || 3001);
   const address = await fastify.listen({ port: PORT, host: '0.0.0.0' });

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -6,23 +5,23 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-let serverModule: any = null;
+let serverModule = null;
 async function loadServerModule() {
   if (!serverModule) {
     const candidates = [
+      resolve(__dirname, '../packages/server/dist/index.js'),
       resolve(__dirname, '../dist/index.js'),
-      resolve(__dirname, '../../server/dist/index.js'),
-      resolve(process.cwd(), 'dist/index.js'),
-      resolve(process.cwd(), 'packages/server/dist/index.js')
+      resolve(process.cwd(), 'packages/server/dist/index.js'),
+      resolve(process.cwd(), 'dist/index.js')
     ];
     const found = candidates.find((p) => existsSync(p));
-    if (!found) throw new Error('Cannot find built server index.js in packages/server');
+    if (!found) throw new Error('Cannot find built server index.js');
     serverModule = await import(pathToFileURL(found).href);
   }
   return serverModule;
 }
 
-let appPromise: Promise<any> | null = null;
+let appPromise = null;
 
 async function getApp() {
   if (!appPromise) {
@@ -39,7 +38,7 @@ async function getApp() {
   return appPromise;
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   const app = await getApp();
   app.server.emit('request', req, res);
 }

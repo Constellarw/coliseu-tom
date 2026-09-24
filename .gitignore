@@ -3,6 +3,7 @@ node_modules/
 
 # Production builds & caches
 dist/
+!packages/tom-core/dist/
 build/
 out/
 .next/

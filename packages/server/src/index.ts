@@ -124,6 +124,15 @@ export function buildServer(dbPath?: string): ServerInstance {
     return reply.code(401).send({ error: 'Senha incorreta. Acesso exclusivo para Juízes e Organizadores.' });
   });
 
+  // Auth Config (provides Google Client ID to frontend dynamically)
+  fastify.get('/api/auth/config', async () => {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '';
+    return {
+      googleClientId,
+      hasGoogleAuth: Boolean(googleClientId)
+    };
+  });
+
   // Google OAuth Login
   fastify.post('/api/auth/google', async (req, reply) => {
     const body = (req.body as { credential?: string; googleId?: string; email?: string; name?: string; picture?: string }) || {};

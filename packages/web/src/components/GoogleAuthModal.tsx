@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, User, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, ShieldCheck, AlertCircle, Key, ExternalLink, Settings, CheckCircle2 } from 'lucide-react';
 import { UserRecord } from '../types/auth';
 
 interface GoogleAuthModalProps {
@@ -19,67 +19,119 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const [activeTab, setActiveTab] = useState<'google' | 'quick'>('google');
-  const [customName, setCustomName] = useState('');
-  const [customEmail, setCustomEmail] = useState('');
+  const [googleClientId, setGoogleClientId] = useState<string>(() => {
+    return (
+      localStorage.getItem('coliseu_google_client_id') ||
+      (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
+      ''
+    );
+  });
+  const [inputClientId, setInputClientId] = useState('');
+  const [isConfiguring, setIsConfiguring] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showDevFallback, setShowDevFallback] = useState(false);
+  const [devEmail, setDevEmail] = useState('');
+  const [devName, setDevName] = useState('');
+
   const googleBtnContainerRef = useRef<HTMLDivElement>(null);
 
-  // Quick preset test players from tournament
-  const PRESET_PLAYERS = [
-    {
-      name: 'Rodrigo Mendes',
-      email: 'rodrigo.mendes@coliseu.com',
-      popId: '100101',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      name: 'Gabriel Oliveira',
-      email: 'gabriel.oliveira@coliseu.com',
-      popId: '100102',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      name: 'Ash Ketchum',
-      email: 'ash.ketchum@pokemon.com',
-      popId: '987654321',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80'
-    }
-  ];
-
+  // 1. Fetch dynamic config from backend on open
   useEffect(() => {
     if (!isOpen) {
       setErrorMessage('');
+      setSaveSuccess(false);
       return;
     }
 
-    const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+    let isMounted = true;
 
-    if (window.google?.accounts?.id && clientId && googleBtnContainerRef.current) {
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/auth/config');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.googleClientId && isMounted && !googleClientId) {
+            setGoogleClientId(data.googleClientId);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch auth config from server:', err);
+      }
+    }
+
+    loadConfig();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
+  // 2. Initialize real Google Identity Services (GSI) when clientId and DOM are ready
+  useEffect(() => {
+    if (!isOpen || !googleClientId) return;
+
+    let checkInterval: any = null;
+
+    const initGoogleGsi = () => {
+      if (!window.google?.accounts?.id) {
+        return false;
+      }
+
       try {
         window.google.accounts.id.initialize({
-          client_id: clientId,
+          client_id: googleClientId,
           callback: async (response: any) => {
             if (response.credential) {
               await handleGoogleCredential(response.credential);
             }
-          }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true
         });
 
-        window.google.accounts.id.renderButton(googleBtnContainerRef.current, {
-          theme: 'filled_black',
-          size: 'large',
-          text: 'signin_with',
-          shape: 'rectangular',
-          width: 320
-        });
-      } catch (err) {
+        if (googleBtnContainerRef.current) {
+          googleBtnContainerRef.current.innerHTML = '';
+          window.google.accounts.id.renderButton(googleBtnContainerRef.current, {
+            theme: 'filled_black',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'rectangular',
+            width: 320,
+            logo_alignment: 'left'
+          });
+        }
+
+        // Try Google One Tap prompt
+        try {
+          window.google.accounts.id.prompt();
+        } catch {}
+
+        return true;
+      } catch (err: any) {
         console.warn('Google GSI render error:', err);
+        setErrorMessage(`Erro ao carregar botão do Google: ${err.message || 'Verifique o Client ID'}`);
+        return false;
       }
-    }
-  }, [isOpen, activeTab]);
+    };
 
+    // Try immediately
+    if (!initGoogleGsi()) {
+      // Retry in case script is still loading
+      checkInterval = setInterval(() => {
+        if (initGoogleGsi()) {
+          clearInterval(checkInterval);
+        }
+      }, 500);
+    }
+
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+    };
+  }, [isOpen, googleClientId, isConfiguring]);
+
+  // 3. Send real Google JWT credential to backend
   const handleGoogleCredential = async (credential: string) => {
     setIsLoading(true);
     setErrorMessage('');
@@ -92,20 +144,37 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Falha ao autenticar com o Google.');
+        throw new Error(data.error || 'Falha ao autenticar conta Google.');
       }
 
       const { user, token } = await res.json();
       onSuccess(user, token);
       onClose();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Erro inesperado durante login.');
+      setErrorMessage(err.message || 'Erro inesperado durante login com o Google.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDevLogin = async (player: { name: string; email: string; popId?: string; avatar?: string }) => {
+  // 4. Save manual Client ID
+  const handleSaveClientId = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanId = inputClientId.trim();
+    if (!cleanId) return;
+
+    localStorage.setItem('coliseu_google_client_id', cleanId);
+    setGoogleClientId(cleanId);
+    setIsConfiguring(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  // 5. Explicit dev login (only visible under advanced accordion)
+  const handleDevLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!devEmail.trim()) return;
+
     setIsLoading(true);
     setErrorMessage('');
     try {
@@ -113,35 +182,24 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: player.email,
-          name: player.name,
-          popId: player.popId,
-          picture: player.avatar
+          email: devEmail.trim(),
+          name: devName.trim() || devEmail.split('@')[0]
         })
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Falha ao realizar login.');
+        throw new Error(data.error || 'Falha ao realizar login simulado.');
       }
 
       const { user, token } = await res.json();
       onSuccess(user, token);
       onClose();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Erro inesperado.');
+      setErrorMessage(err.message || 'Erro no login simulado.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCustomLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customEmail.trim()) return;
-    await handleDevLogin({
-      name: customName.trim() || customEmail.split('@')[0],
-      email: customEmail.trim()
-    });
   };
 
   if (!isOpen) return null;
@@ -157,9 +215,9 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-white uppercase tracking-tight">
-                Entrar no Coliseu Arena
+                Login com Google
               </h3>
-              <p className="text-xs text-zinc-400">Identificação oficial para jogadores</p>
+              <p className="text-xs text-zinc-400">Autenticação oficial para jogadores</p>
             </div>
           </div>
           <button
@@ -174,152 +232,170 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
         <div className="px-6 py-3 bg-red-950/20 border-b border-red-900/30 flex items-start space-x-2.5">
           <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
           <p className="text-[11px] text-zinc-300 leading-relaxed">
-            Seu login garante que <strong>apenas você</strong> possa acessar e reportar o resultado da sua mesa no torneio oficial, impedindo fraudes.
+            Seu login oficial garante que <strong>apenas você</strong> possa acessar e reportar o resultado da sua mesa no torneio Pokémon TCG, impedindo fraudes.
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-zinc-800 px-6 pt-3 gap-2">
-          <button
-            onClick={() => setActiveTab('google')}
-            className={`pb-2.5 text-xs font-bold transition-all relative ${
-              activeTab === 'google' ? 'text-red-500' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Google Sign-In
-            {activeTab === 'google' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600 rounded-full" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('quick')}
-            className={`pb-2.5 text-xs font-bold transition-all relative flex items-center gap-1.5 ${
-              activeTab === 'quick' ? 'text-red-500' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Sparkles className="w-3 h-3 text-amber-400" />
-            Login Rápido de Teste
-            {activeTab === 'quick' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600 rounded-full" />
-            )}
-          </button>
-        </div>
-
         {/* Body */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-5">
           {errorMessage && (
             <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
               {errorMessage}
             </div>
           )}
 
-          {activeTab === 'google' ? (
+          {saveSuccess && (
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <span>Google Client ID configurado com sucesso!</span>
+            </div>
+          )}
+
+          {/* MAIN GOOGLE LOGIN SECTION */}
+          {googleClientId && !isConfiguring ? (
             <div className="space-y-4 text-center">
-              <p className="text-xs text-zinc-400">
-                Acesse com sua conta do Google para vincular seu perfil e manter seu histórico de partidas gravado.
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Clique abaixo para autenticar com sua conta oficial do Google (<span className="text-zinc-200">@gmail.com</span>):
               </p>
 
-              {/* Real Google GSI button if available */}
-              <div className="flex justify-center min-h-[44px]" ref={googleBtnContainerRef}>
-                {/* Fallback button if Google Client ID not yet set */}
+              {/* Real Google GSI iframe button container */}
+              <div className="flex justify-center min-h-[46px] my-3">
+                <div ref={googleBtnContainerRef} className="flex justify-center w-full" />
+              </div>
+
+              {isLoading && (
+                <div className="text-xs text-red-400 font-medium animate-pulse">
+                  Validando autenticação Google com o servidor...
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-500">
+                <span className="truncate max-w-[200px]" title={googleClientId}>
+                  Client: {googleClientId.slice(0, 15)}...
+                </span>
                 <button
+                  type="button"
                   onClick={() => {
-                    // One-click simulated Google auth for instant usage
-                    handleDevLogin({
-                      name: 'Treinador Pokémon',
-                      email: 'treinador@gmail.com'
-                    });
+                    setInputClientId(googleClientId);
+                    setIsConfiguring(true);
                   }}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-white hover:bg-zinc-100 text-zinc-900 font-bold rounded-xl transition-all shadow-md active:scale-98"
+                  className="text-zinc-400 hover:text-zinc-200 flex items-center gap-1 transition-colors"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                  <span>Entrar com o Google</span>
+                  <Settings className="w-3 h-3" />
+                  <span>Alterar Client ID</span>
                 </button>
               </div>
-
-              <p className="text-[10px] text-zinc-500">
-                Seus dados são protegidos e associados com segurança ao seu POP ID oficial.
-              </p>
             </div>
           ) : (
+            /* CONFIGURATION SECTION WHEN CLIENT ID IS MISSING */
             <div className="space-y-4">
-              <p className="text-xs text-zinc-400">
-                Escolha um jogador do torneio atual para testar o sistema imediatamente:
-              </p>
-
-              <div className="space-y-2">
-                {PRESET_PLAYERS.map((player) => (
-                  <button
-                    key={player.popId}
-                    onClick={() => handleDevLogin(player)}
-                    disabled={isLoading}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/80 hover:border-red-500/30 transition-all text-left group"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-lg bg-red-600/10 border border-red-500/20 flex items-center justify-center font-bold text-red-400 text-xs">
-                        {player.name[0]}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white group-hover:text-red-400 transition-colors">
-                          {player.name}
-                        </div>
-                        <div className="text-[10px] text-zinc-400 font-mono">
-                          POP ID: {player.popId}
-                        </div>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-red-400 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-                ))}
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5 text-amber-200">
+                  <Key className="w-4 h-4 text-amber-400" />
+                  <span>Configuração do Google OAuth necessária</span>
+                </div>
+                <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                  Para abrir a janela oficial do Google no navegador, informe o <strong>OAuth Client ID</strong> da sua aplicação Google Cloud.
+                </p>
               </div>
 
-              <div className="pt-2 border-t border-zinc-800/80">
-                <p className="text-[11px] text-zinc-400 mb-2 font-medium">Ou entre com outro email:</p>
-                <form onSubmit={handleCustomLogin} className="space-y-2">
+              <form onSubmit={handleSaveClientId} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-zinc-300 uppercase mb-1">
+                    Google OAuth Client ID
+                  </label>
                   <input
                     type="text"
-                    value={customName}
-                    onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="Seu nome"
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
-                  />
-                  <input
-                    type="email"
-                    value={customEmail}
-                    onChange={(e) => setCustomEmail(e.target.value)}
-                    placeholder="seu.email@exemplo.com"
+                    value={inputClientId}
+                    onChange={(e) => setInputClientId(e.target.value)}
+                    placeholder="ex: 123456789-abcdef.apps.googleusercontent.com"
                     required
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
+                    className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 font-mono"
                   />
+                </div>
+
+                <div className="flex gap-2">
                   <button
                     type="submit"
-                    disabled={isLoading || !customEmail.trim()}
-                    className="w-full py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors"
+                    disabled={!inputClientId.trim()}
+                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-98"
                   >
-                    Entrar com este perfil
+                    Ativar Login Google
                   </button>
-                </form>
+
+                  {googleClientId && (
+                    <button
+                      type="button"
+                      onClick={() => setIsConfiguring(false)}
+                      className="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-medium transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1.5">
+                <div className="font-bold text-zinc-300 flex items-center justify-between">
+                  <span>Como obter seu Client ID:</span>
+                  <a
+                    href="https://console.cloud.google.com/apis/credentials"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-red-400 hover:text-red-300 flex items-center gap-1"
+                  >
+                    Google Cloud <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <p className="text-[10px] leading-relaxed text-zinc-400">
+                  1. Crie uma credencial <strong>OAuth 2.0 Client ID</strong> (Web Application).<br />
+                  2. Em <strong>Origens JavaScript autorizadas</strong>, adicione:<br />
+                  <code className="text-zinc-200 bg-zinc-800 px-1 py-0.5 rounded">https://coliseu-tom.vercel.app</code>
+                </p>
               </div>
             </div>
           )}
+
+          {/* Collapsible offline fallback for local tests */}
+          <div className="pt-2 border-t border-zinc-800/60">
+            <button
+              type="button"
+              onClick={() => setShowDevFallback(!showDevFallback)}
+              className="text-[10px] text-zinc-500 hover:text-zinc-400 transition-colors w-full text-center flex items-center justify-center gap-1"
+            >
+              <span>{showDevFallback ? 'Ocultar testes offline' : 'Opções avançadas / Teste offline'}</span>
+            </button>
+
+            {showDevFallback && (
+              <form onSubmit={handleDevLogin} className="mt-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/80 space-y-2">
+                <p className="text-[10px] text-zinc-400 leading-tight">
+                  Simulação offline apenas para testes de interface:
+                </p>
+                <input
+                  type="text"
+                  value={devName}
+                  onChange={(e) => setDevName(e.target.value)}
+                  placeholder="Nome do Jogador"
+                  className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-red-500"
+                />
+                <input
+                  type="email"
+                  value={devEmail}
+                  onChange={(e) => setDevEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                  required
+                  className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-red-500"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !devEmail.trim()}
+                  className="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-lg transition-colors"
+                >
+                  Entrar como Teste Offline
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>

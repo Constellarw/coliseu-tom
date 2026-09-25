@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, User, RefreshCw, Lock, LogOut } from 'lucide-react';
+import { Shield, User, Lock, LogOut } from 'lucide-react';
 import { UserRecord } from '../types/auth';
 
 interface HeaderProps {
@@ -51,17 +51,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Actions */}
         <div className="flex items-center space-x-2">
-          {/* Refresh button */}
-          <button
-            onClick={onRefresh}
-            className={`p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white transition-colors ${
-              isSyncing ? 'animate-spin text-red-500' : ''
-            }`}
-            title="Atualizar dados da arena"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-
           {/* User Account / Login */}
           {user ? (
             <button

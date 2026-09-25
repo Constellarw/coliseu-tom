@@ -123,10 +123,6 @@ export const PlayerView: React.FC<PlayerViewProps> = ({
             <span>Consultar Mesas e Tabela (Visitante)</span>
           </button>
         </div>
-
-        <div className="mt-8 pt-4 border-t border-zinc-800/80 text-[11px] text-zinc-500">
-          🔒 Sistema com verificação anti-fraude integrado ao Pokémon TOM.
-        </div>
       </div>
     );
   }
